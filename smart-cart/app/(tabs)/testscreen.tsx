@@ -1,21 +1,35 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Text, View, Image } from 'react-native';
+import { ActivityIndicator, FlatList, Text, View, Image, Button } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useRouter } from 'expo-router';
 
 type Product = {
   id: string;
   title: string;
   brand: string;
   ingredients: string[];
+  allergens?: string[];
+  additives?: string[];
+  traces?: string[];
   image?: string | null;
   nutriscore?: string | null;
 };
+type RootStackParamList = {
+  Details: { product: Product };
+  // add other routes here if needed
+};
 
-const App = () => {
+const TestScreen = () => {
   const [isLoading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerms, setSearchTerms] = useState("pop tarts");
   // const [additives, setAdditives] = useState<string[]>(["E150d", "E104"]);
   const [allergens, setAllergens] = useState<string[]>(["peanuts", "milk"]);
+
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const router = useRouter(); 
+  // const navigation = useNavigation();
 
   const getProducts = async () => {
   try {
@@ -66,6 +80,9 @@ const App = () => {
       ingredients: p.ingredients ? getIngredients(p.ingredients) : [],
       image: p.image_front_url || p.image_url || null,
       nutriscore: p.nutriscore_grade || null,
+      allergens: p.allergens || [],
+      additives: p.additives || [],
+      traces: getTraces(p.traces_tags) || [],
     }));
 
     setProducts(filteredProducts);
@@ -77,6 +94,15 @@ const App = () => {
 };
 
 
+const cleanTraces = (traces: string[] | undefined): string[] => {
+  if (!traces || !Array.isArray(traces)) return [];
+  return traces.map((t) => {
+    if (typeof t !== "string") return "";
+    const parts = t.split(":");
+    return parts.length > 1 ? parts[1].trim().toLowerCase() : t.trim().toLowerCase();
+  });
+};
+
   const getIngredients = (ingredients: any[]) => {
     let filteredIngredients: string[] = [];
     ingredients.forEach((ingredient) => {
@@ -85,6 +111,17 @@ const App = () => {
       }
     });
     return filteredIngredients;
+  };
+
+  const getTraces = (traces: any[]) => {
+    let filteredTraces: string[] = [];
+    traces.forEach((trace_tag) => {
+      if (trace_tag.startsWith("en:")) {
+        filteredTraces.push(trace_tag.slice(3).replace(/-/g, " "));
+      }
+    });
+    console.log("filteredtraces: " + filteredTraces);
+    return filteredTraces;
   };
 
   // useEffect(() => {
@@ -170,6 +207,19 @@ const App = () => {
               <Text style={{ fontWeight: 'bold', textAlign: 'center' }}>{item.title}</Text>
               <Text style={{ textAlign: 'center' }}>Brand: {item.brand}</Text>
               <Text style={{ textAlign: 'center' }}>Nutriscore: {item.nutriscore}</Text>
+              <Button 
+                title="Details"
+                onPress={() =>
+                  router.push({
+                    pathname: "/ProductDetails",
+                    params: {
+                      product: JSON.stringify(item),
+                      allergens: JSON.stringify(allergens)
+                    },
+                  })
+                }
+              />
+              
             </View>
           )}
         />
@@ -179,4 +229,5 @@ const App = () => {
   );
 };
 
-export default App;
+
+export default TestScreen;
