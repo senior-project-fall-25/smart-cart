@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Text, View, Image, Button } from 'react-native';
+import { ActivityIndicator, FlatList, Text, View, Image, Button, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useRouter } from 'expo-router';
+import { ProductText, ProductHeader } from '../SmartCartStyles';
 
 type Product = {
   id: string;
@@ -23,9 +24,9 @@ type RootStackParamList = {
 const TestScreen = () => {
   const [isLoading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
-  const [searchTerms, setSearchTerms] = useState("pop tarts");
+  const [searchTerms, setSearchTerms] = useState("");
   // const [additives, setAdditives] = useState<string[]>(["E150d", "E104"]);
-  const [allergens, setAllergens] = useState<string[]>(["peanuts", "milk"]);
+  const [allergens, setAllergens] = useState<string[]>([""]);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const router = useRouter(); 
@@ -93,16 +94,6 @@ const TestScreen = () => {
   }
 };
 
-
-const cleanTraces = (traces: string[] | undefined): string[] => {
-  if (!traces || !Array.isArray(traces)) return [];
-  return traces.map((t) => {
-    if (typeof t !== "string") return "";
-    const parts = t.split(":");
-    return parts.length > 1 ? parts[1].trim().toLowerCase() : t.trim().toLowerCase();
-  });
-};
-
   const getIngredients = (ingredients: any[]) => {
     let filteredIngredients: string[] = [];
     ingredients.forEach((ingredient) => {
@@ -124,12 +115,9 @@ const cleanTraces = (traces: string[] | undefined): string[] => {
     return filteredTraces;
   };
 
-  // useEffect(() => {
-  //   getProducts();
-  // }, []);
-
   return (
     <View style={{ flex: 1, padding: 24, backgroundColor: 'white' }}>
+      
       <input
         type="text"
         value={searchTerms}
@@ -171,6 +159,7 @@ const cleanTraces = (traces: string[] | undefined): string[] => {
           numColumns={2}
           columnWrapperStyle={{ justifyContent: 'space-between' }}
           renderItem={({ item }) => (
+            
             <View
               style={{
                 flex: 1,
@@ -182,7 +171,16 @@ const cleanTraces = (traces: string[] | undefined): string[] => {
                 backgroundColor: '#fafafa',
                 alignItems: 'center',
               }}
-            >
+              >
+                <TouchableOpacity onPress={() =>
+                  router.push({
+                    pathname: "/ProductDetails",
+                    params: {
+                      product: JSON.stringify(item),
+                      allergens: JSON.stringify(allergens)
+                    },
+                  })
+                } style={{ alignItems: 'center' }}> 
               {item.image ? (
                 <Image
                   source={{ uri: item.image }}
@@ -204,10 +202,10 @@ const cleanTraces = (traces: string[] | undefined): string[] => {
                   <Text>No Image</Text>
                 </View>
               )}
-              <Text style={{ fontWeight: 'bold', textAlign: 'center' }}>{item.title}</Text>
-              <Text style={{ textAlign: 'center' }}>Brand: {item.brand}</Text>
-              <Text style={{ textAlign: 'center' }}>Nutriscore: {item.nutriscore}</Text>
-              <Button 
+              <ProductText>{item.brand}</ProductText>
+              <ProductHeader>{item.title}</ProductHeader>
+              <ProductText>Excellent Pick: {item.nutriscore}</ProductText>
+              {/* <Button
                 title="Details"
                 onPress={() =>
                   router.push({
@@ -218,13 +216,15 @@ const cleanTraces = (traces: string[] | undefined): string[] => {
                     },
                   })
                 }
-              />
-              
+              /> */}
+              </TouchableOpacity>
             </View>
+            
           )}
         />
 
       )}
+      
     </View>
   );
 };
