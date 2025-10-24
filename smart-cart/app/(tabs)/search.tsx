@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Text, View, Image, Button, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, FlatList, Text, View, Image, Button, TouchableOpacity, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useRouter } from 'expo-router';
 import { ProductText, ProductHeader } from '../SmartCartStyles';
+import { SearchBar } from 'react-native-elements';
+import { Ionicons } from '@expo/vector-icons';
 
 type Product = {
   id: string;
@@ -21,12 +23,12 @@ type RootStackParamList = {
   // add other routes here if needed
 };
 
-const TestScreen = () => {
+const SearchScreen = () => {
   const [isLoading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerms, setSearchTerms] = useState("");
   // const [additives, setAdditives] = useState<string[]>(["E150d", "E104"]);
-  const [allergens, setAllergens] = useState<string[]>([""]);
+  const [allergens, setAllergens] = useState<string[]>(["peanuts", "milk"]);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const router = useRouter(); 
@@ -118,20 +120,37 @@ const TestScreen = () => {
   return (
     <View style={{ flex: 1, padding: 24, backgroundColor: 'white' }}>
       
-      <input
-        type="text"
+      <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#f0f0f0",
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        marginBottom: 12,
+      }}
+    >
+      <Ionicons name="search" size={20} color="gray" style={{ marginRight: 6 }} />
+      <TextInput
         value={searchTerms}
-        onChange={(e) => setSearchTerms(e.target.value)}
-        placeholder="Search Terms"
-        style={{ marginBottom: 12, padding: 8, borderColor: 'gray', borderWidth: 1 }}
+        onChangeText={setSearchTerms}
+        placeholder="Search Products"
+        placeholderTextColor="gray"
+        style={{
+          flex: 1,
+          paddingVertical: 8,
+          fontFamily: "DM-Sans",
+          color: "black",
+        }}
       />
-      <input
+    </View>
+      {/* <input
         type="text"
         value={allergens.join(", ")}
         onChange={(e) => setAllergens(e.target.value.split(", ").map(item => item.trim()))}
         placeholder="Allergens"
-        style={{ marginBottom: 12, padding: 8, borderColor: 'gray', borderWidth: 1 }}
-      />
+        style={{ marginBottom: 12, padding: 8, borderColor: 'gray', borderWidth: 1, fontFamily: 'DM-Sans' }}
+      /> */}
       {/* <input
         type="text"
         value={additives.join(", ")}
@@ -145,10 +164,22 @@ const TestScreen = () => {
           setLoading(true);
           getProducts();
         }}
-        style={{ marginBottom: 12, padding: 8, backgroundColor: 'blue', color: 'white' }}
+        style={{ marginBottom: 12, padding: 8, backgroundColor: 'light-blue', color: 'white', fontFamily: 'DM-Sans', borderRadius: 4 }}
       >
         Search
       </button>
+      {!isLoading && searchTerms.trim() !== "" && products.length > 0 && (
+    <Text
+      style={{
+        marginBottom: 12,
+        fontFamily: "DM-Sans",
+        fontSize: 16,
+        color: "gray",
+      }}
+    >
+      Showing results for <Text style={{ fontWeight: "600", color: "black" }}>{searchTerms}</Text>
+    </Text>
+  )}
 
       {isLoading ? (
         <ActivityIndicator />
@@ -230,4 +261,4 @@ const TestScreen = () => {
 };
 
 
-export default TestScreen;
+export default SearchScreen;
