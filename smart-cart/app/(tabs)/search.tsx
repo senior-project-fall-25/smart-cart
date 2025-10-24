@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Text, View, Image, Button } from 'react-native';
+import { ActivityIndicator, FlatList, Text, View, Image, Button, TouchableOpacity, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useRouter } from 'expo-router';
+import { ProductText, ProductHeader } from '../SmartCartStyles';
+import { SearchBar } from 'react-native-elements';
+import { Ionicons } from '@expo/vector-icons';
 
 type Product = {
   id: string;
@@ -20,10 +23,10 @@ type RootStackParamList = {
   // add other routes here if needed
 };
 
-const TestScreen = () => {
+const SearchScreen = () => {
   const [isLoading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
-  const [searchTerms, setSearchTerms] = useState("pop tarts");
+  const [searchTerms, setSearchTerms] = useState("");
   // const [additives, setAdditives] = useState<string[]>(["E150d", "E104"]);
   const [allergens, setAllergens] = useState<string[]>(["peanuts", "milk"]);
 
@@ -93,16 +96,6 @@ const TestScreen = () => {
   }
 };
 
-
-const cleanTraces = (traces: string[] | undefined): string[] => {
-  if (!traces || !Array.isArray(traces)) return [];
-  return traces.map((t) => {
-    if (typeof t !== "string") return "";
-    const parts = t.split(":");
-    return parts.length > 1 ? parts[1].trim().toLowerCase() : t.trim().toLowerCase();
-  });
-};
-
   const getIngredients = (ingredients: any[]) => {
     let filteredIngredients: string[] = [];
     ingredients.forEach((ingredient) => {
@@ -124,26 +117,40 @@ const cleanTraces = (traces: string[] | undefined): string[] => {
     return filteredTraces;
   };
 
-  // useEffect(() => {
-  //   getProducts();
-  // }, []);
-
   return (
     <View style={{ flex: 1, padding: 24, backgroundColor: 'white' }}>
-      <input
-        type="text"
+      
+      <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#f0f0f0",
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        marginBottom: 12,
+      }}
+    >
+      <Ionicons name="search" size={20} color="gray" style={{ marginRight: 6 }} />
+      <TextInput
         value={searchTerms}
-        onChange={(e) => setSearchTerms(e.target.value)}
-        placeholder="Search Terms"
-        style={{ marginBottom: 12, padding: 8, borderColor: 'gray', borderWidth: 1 }}
+        onChangeText={setSearchTerms}
+        placeholder="Search Products"
+        placeholderTextColor="gray"
+        style={{
+          flex: 1,
+          paddingVertical: 8,
+          fontFamily: "DM-Sans",
+          color: "black",
+        }}
       />
-      <input
+    </View>
+      {/* <input
         type="text"
         value={allergens.join(", ")}
         onChange={(e) => setAllergens(e.target.value.split(", ").map(item => item.trim()))}
         placeholder="Allergens"
-        style={{ marginBottom: 12, padding: 8, borderColor: 'gray', borderWidth: 1 }}
-      />
+        style={{ marginBottom: 12, padding: 8, borderColor: 'gray', borderWidth: 1, fontFamily: 'DM-Sans' }}
+      /> */}
       {/* <input
         type="text"
         value={additives.join(", ")}
@@ -157,10 +164,22 @@ const cleanTraces = (traces: string[] | undefined): string[] => {
           setLoading(true);
           getProducts();
         }}
-        style={{ marginBottom: 12, padding: 8, backgroundColor: 'blue', color: 'white' }}
+        style={{ marginBottom: 12, padding: 8, backgroundColor: 'light-blue', color: 'white', fontFamily: 'DM-Sans', borderRadius: 4 }}
       >
         Search
       </button>
+      {!isLoading && searchTerms.trim() !== "" && products.length > 0 && (
+    <Text
+      style={{
+        marginBottom: 12,
+        fontFamily: "DM-Sans",
+        fontSize: 16,
+        color: "gray",
+      }}
+    >
+      Showing results for <Text style={{ fontWeight: "600", color: "black" }}>{searchTerms}</Text>
+    </Text>
+  )}
 
       {isLoading ? (
         <ActivityIndicator />
@@ -171,6 +190,7 @@ const cleanTraces = (traces: string[] | undefined): string[] => {
           numColumns={2}
           columnWrapperStyle={{ justifyContent: 'space-between' }}
           renderItem={({ item }) => (
+            
             <View
               style={{
                 flex: 1,
@@ -182,7 +202,16 @@ const cleanTraces = (traces: string[] | undefined): string[] => {
                 backgroundColor: '#fafafa',
                 alignItems: 'center',
               }}
-            >
+              >
+                <TouchableOpacity onPress={() =>
+                  router.push({
+                    pathname: "/ProductDetails",
+                    params: {
+                      product: JSON.stringify(item),
+                      allergens: JSON.stringify(allergens)
+                    },
+                  })
+                } style={{ alignItems: 'center' }}> 
               {item.image ? (
                 <Image
                   source={{ uri: item.image }}
@@ -204,10 +233,10 @@ const cleanTraces = (traces: string[] | undefined): string[] => {
                   <Text>No Image</Text>
                 </View>
               )}
-              <Text style={{ fontWeight: 'bold', textAlign: 'center' }}>{item.title}</Text>
-              <Text style={{ textAlign: 'center' }}>Brand: {item.brand}</Text>
-              <Text style={{ textAlign: 'center' }}>Nutriscore: {item.nutriscore}</Text>
-              <Button 
+              <ProductText>{item.brand}</ProductText>
+              <ProductHeader>{item.title}</ProductHeader>
+              <ProductText>Excellent Pick: {item.nutriscore}</ProductText>
+              {/* <Button
                 title="Details"
                 onPress={() =>
                   router.push({
@@ -218,16 +247,18 @@ const cleanTraces = (traces: string[] | undefined): string[] => {
                     },
                   })
                 }
-              />
-              
+              /> */}
+              </TouchableOpacity>
             </View>
+            
           )}
         />
 
       )}
+      
     </View>
   );
 };
 
 
-export default TestScreen;
+export default SearchScreen;
