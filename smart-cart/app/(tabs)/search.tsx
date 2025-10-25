@@ -159,21 +159,22 @@ const SearchScreen = () => {
         style={{ marginBottom: 12, padding: 8, borderColor: 'gray', borderWidth: 1 }}
       /> */}
       <TouchableOpacity
-        onPress={() => {
-          setProducts([]);
-          setLoading(true);
-          getProducts();
-        }}
-        style={{
-          marginBottom: 12,
-          padding: 10,
-          backgroundColor: '#007AFF',
-          borderRadius: 4,
-          alignItems: 'center',
-        }}
-      >
-        <Text style={{ color: 'white', fontFamily: 'DM-Sans' }}>Search</Text>
-      </TouchableOpacity>
+  onPress={() => {
+    setProducts([]);
+    setLoading(true);
+    getProducts();
+  }}
+  style={{
+    marginBottom: 12,
+    padding: 10,
+    backgroundColor: '#007AFF',
+    borderRadius: 4,
+    alignItems: 'center',
+  }}
+>
+  <Text style={{ color: 'white', fontFamily: 'DM-Sans' }}>Search</Text>
+</TouchableOpacity>
+
 
       {!isLoading && searchTerms.trim() !== "" && products.length > 0 && (
     <Text
