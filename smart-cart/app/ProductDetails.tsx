@@ -2,9 +2,12 @@ import { useLocalSearchParams } from "expo-router";
 import { View, Text, Image, ScrollView } from "react-native";
 
 export default function ProductDetails({ }: { allergens?: string[] }) {
-  const { product, allergens } = useLocalSearchParams();
-  const data = product ? JSON.parse(product as string) : null;
-  const allergenList = allergens ? JSON.parse(allergens as string) : [];
+  const { product, allergens } = useLocalSearchParams<{
+    product?: string;
+    allergens?: string;
+  }>();
+  const data = product ? JSON.parse(decodeURIComponent(product as string)) : null;
+  const allergenList = allergens ? JSON.parse(decodeURIComponent(allergens as string)) : [];
 
   if (!data) {
     return (

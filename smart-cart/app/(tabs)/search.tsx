@@ -3,8 +3,7 @@ import { ActivityIndicator, FlatList, Text, View, Image, Button, TouchableOpacit
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useRouter } from 'expo-router';
-import { ProductText, ProductHeader } from '../SmartCartStyles';
-import { SearchBar } from 'react-native-elements';
+import { ProductText, ProductHeader } from '@/app/SmartCartStyles';
 import { Ionicons } from '@expo/vector-icons';
 
 type Product = {
@@ -118,7 +117,8 @@ const SearchScreen = () => {
   };
 
   return (
-    <View style={{ flex: 1, padding: 24, backgroundColor: 'white' }}>
+    
+    <View style={{ flex: 1, padding: 24, backgroundColor: 'white', gap: 8 }}>
       
       <View
       style={{
@@ -144,36 +144,22 @@ const SearchScreen = () => {
         }}
       />
     </View>
-      {/* <input
-        type="text"
-        value={allergens.join(", ")}
-        onChange={(e) => setAllergens(e.target.value.split(", ").map(item => item.trim()))}
-        placeholder="Allergens"
-        style={{ marginBottom: 12, padding: 8, borderColor: 'gray', borderWidth: 1, fontFamily: 'DM-Sans' }}
-      /> */}
-      {/* <input
-        type="text"
-        value={additives.join(", ")}
-        onChange={(e) => setAdditives(e.target.value.split(", ").map(item => item.trim()))}
-        placeholder="Additives"
-        style={{ marginBottom: 12, padding: 8, borderColor: 'gray', borderWidth: 1 }}
-      /> */}
       <TouchableOpacity
-  onPress={() => {
-    setProducts([]);
-    setLoading(true);
-    getProducts();
-  }}
-  style={{
-    marginBottom: 12,
-    padding: 10,
-    backgroundColor: '#007AFF',
-    borderRadius: 4,
-    alignItems: 'center',
-  }}
->
-  <Text style={{ color: 'white', fontFamily: 'DM-Sans' }}>Search</Text>
-</TouchableOpacity>
+        onPress={() => {
+          setProducts([]);
+          setLoading(true);
+          getProducts();
+        }}
+        style={{
+          marginBottom: 12,
+          padding: 10,
+          backgroundColor: '#8d3462ff',
+          borderRadius: 4,
+          alignItems: 'center',
+        }}
+      >
+        <Text style={{ color: 'white', fontFamily: 'DM-Sans' }}>Search</Text>
+      </TouchableOpacity>
 
 
       {!isLoading && searchTerms.trim() !== "" && products.length > 0 && (
@@ -215,10 +201,10 @@ const SearchScreen = () => {
                   router.push({
                     pathname: "/ProductDetails",
                     params: {
-                      product: JSON.stringify(item),
-                      allergens: JSON.stringify(allergens)
-                    },
-                  })
+                      product: encodeURIComponent(JSON.stringify(item)),
+                      allergens: encodeURIComponent(JSON.stringify(allergens)),
+                    },})
+
                 } style={{ alignItems: 'center' }}> 
               {item.image ? (
                 <Image
@@ -267,6 +253,7 @@ const SearchScreen = () => {
     </View>
   );
 };
+
 
 
 export default SearchScreen;
