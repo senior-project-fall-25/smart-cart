@@ -158,16 +158,23 @@ const SearchScreen = () => {
         placeholder="Additives"
         style={{ marginBottom: 12, padding: 8, borderColor: 'gray', borderWidth: 1 }}
       /> */}
-      <button
-        onClick={() => {
-          setProducts([]); 
+      <TouchableOpacity
+        onPress={() => {
+          setProducts([]);
           setLoading(true);
           getProducts();
         }}
-        style={{ marginBottom: 12, padding: 8, backgroundColor: 'light-blue', color: 'white', fontFamily: 'DM-Sans', borderRadius: 4 }}
+        style={{
+          marginBottom: 12,
+          padding: 10,
+          backgroundColor: '#007AFF',
+          borderRadius: 4,
+          alignItems: 'center',
+        }}
       >
-        Search
-      </button>
+        <Text style={{ color: 'white', fontFamily: 'DM-Sans' }}>Search</Text>
+      </TouchableOpacity>
+
       {!isLoading && searchTerms.trim() !== "" && products.length > 0 && (
     <Text
       style={{
