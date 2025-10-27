@@ -7,7 +7,7 @@ import { useFonts } from 'expo-font';
 import { Text, View } from 'react-native';
 
 export const unstable_settings = {
-  anchor: '(tabs)',
+  anchor: 'index',
 };
 
 export default function RootLayout() {
@@ -34,6 +34,8 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
+        <Stack.Screen name="index" options={{ title: '' }} />
+        <Stack.Screen name="(Profile-Creation)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
