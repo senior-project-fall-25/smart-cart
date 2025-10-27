@@ -16,7 +16,7 @@ export default function ProductDetails({ }: { allergens?: string[] }) {
       </View>
     );
   }
-  const tracesArray = Array.isArray(data.traces)
+  const tracesArray = Array.isArray(data.traces) // traces 
     ? data.traces
     : typeof data.traces === "string"
       ? data.traces.split(",").map((t: string) => t.trim().toLowerCase())

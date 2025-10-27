@@ -1,4 +1,3 @@
-// components/SmartCartStyles.tsx (move it OUT of app/)
 import { Text } from "react-native";
 import React from "react";
 
@@ -22,7 +21,6 @@ const ProductBrand = ({ children }: { children: React.ReactNode }) => (
 
 export { ProductText, ProductHeader, ProductBrand };
 
-// (optional, to keep Expo Router happy if it’s still inside /app)
 export default function Empty() {
     return null;
 }

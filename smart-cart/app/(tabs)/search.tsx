@@ -204,7 +204,7 @@ const SearchScreen = () => {
               >
                 <TouchableOpacity onPress={() =>
                   router.push({
-                    pathname: "/ProductDetails",
+                    pathname: "/Details",
                     params: {
                       product: encodeURIComponent(JSON.stringify(item)),
                       allergens: encodeURIComponent(JSON.stringify(allergens)),
