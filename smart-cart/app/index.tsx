@@ -11,12 +11,12 @@ export default function Index() {
         alignItems: "center",
       }}
     >
-      <Text>This is just a launchpad for basic stuff in profile creation.</Text>
+      <Text style={{ fontFamily: "DM-Sans" }}>This is just a launchpad for basic stuff in profile creation.</Text>
       <TouchableOpacity
           onPress={()=> router.replace('/introduction')}
                       
         >
-            <Text >Start profile creation</Text>
+            <Text style={{ fontFamily: "DM-Sans" }}>Start profile creation</Text>
         </TouchableOpacity>
     </View>
   );

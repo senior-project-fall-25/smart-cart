@@ -65,14 +65,14 @@ const styles = StyleSheet.create({
     header: {
         fontSize: 42,
         fontWeight: 'bold',
-        fontFamily: 'Monserrat',
+        fontFamily: 'DM-Sans-SemiBold',
         color: '#303030',
         textAlign: 'center',
         margin: 20,
     },
     body:{
         fontSize: 20,
-        fontFamily:'Monserrat',
+        fontFamily:'DM-Sans',
         textAlign: 'center',
         color: '#303030',
         padding: 10

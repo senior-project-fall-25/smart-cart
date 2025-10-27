@@ -69,7 +69,7 @@ export default function SetAllergens() {
 
     return (
         <View style={styles.container} >
-            <Text style={styles.header}>Any Allergies We Should Know About?</Text>
+            <Text style={styles.header}>Any Allergies We Should Know?</Text>
              <ScrollView style={styles.scrollBox} contentContainerStyle={styles.row}>
                 
                     {
@@ -130,14 +130,14 @@ const styles = StyleSheet.create({
     header: {
         fontSize: 38,
         fontWeight: 'bold',
-        fontFamily: 'Monserrat',
+        fontFamily: 'DM-Sans-SemiBold',
         color: '#303030',
         textAlign: 'center',
         margin: 10,
     },
     body:{
         fontSize: 20,
-        fontFamily:'Monserrat',
+        fontFamily:'DM-Sans',
         textAlign: 'center',
         color: '#303030',
         margin: 10

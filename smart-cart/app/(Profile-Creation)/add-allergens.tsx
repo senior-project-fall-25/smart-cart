@@ -59,7 +59,7 @@ export default function AddAllergens({selected, setSelected} : Props) {
 const styles = StyleSheet.create({
     body:{
         fontSize: 18,
-        fontFamily:'Monserrat',
+        fontFamily:'DM-Sans',
         textAlign: 'center',
         color: '#303030',
         margin: 10

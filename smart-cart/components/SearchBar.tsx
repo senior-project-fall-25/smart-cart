@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     },
     body:{
         fontSize: 16,
-        fontFamily:'Monserrat',
+        fontFamily:'DM-Sans',
         color: '#303030',
     },
     container: {

@@ -36,16 +36,16 @@ const styles = StyleSheet.create({
         margin: '10%',
     },
     header: {
-        fontSize: 52,
+        fontSize: 48,
         fontWeight: 'bold',
-        fontFamily: 'Monserrat',
+        fontFamily: 'DM-Sans-SemiBold',
         color: '#303030',
         textAlign: 'center',
         margin: 10,
     },
     body:{
-        fontSize: 24,
-        fontFamily:'Monserrat',
+        fontSize: 20,
+        fontFamily:'DM-Sans',
         textAlign: 'center',
         color: '#303030',
         margin: 10
