@@ -1,8 +1,8 @@
 import { Text, View,Image, ScrollView, StyleSheet, TouchableOpacity} from "react-native";
 import { Link, useRouter, useLocalSearchParams } from "expo-router";
 import { HeaderTitle } from "@react-navigation/elements";
-import Search from "@/components/SearchBar";
-import allergenNames from "@/api/allergensNames";
+import Search from "@/app/components/SearchBar";
+import allergenNames from "@/app/api/allergensNames";
 import { useState } from "react";
 import AntDesign from '@expo/vector-icons/AntDesign';
 

@@ -13,5 +13,5 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-, "components/popUp.tsx"  ]
+, "app/components/popUp.tsx"  ]
 }

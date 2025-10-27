@@ -2,9 +2,9 @@ import { Text, View,Image, Button, StyleSheet, TouchableOpacity, ScrollView, Mod
 import { Link, useRouter } from "expo-router";
 import { HeaderTitle } from "@react-navigation/elements";
 import { useState } from "react";
-import PopUp from '../../components/popUp'
-import Search from "../../components/SearchBar";
-import allergenNames from "../../api/allergensNames"
+import PopUp from '../components/popUp'
+import Search from "../components/SearchBar";
+import allergenNames from "../api/allergensNames"
 import AddAllergens from "./add-allergens";
 
 
