@@ -3,8 +3,10 @@ import { ActivityIndicator, FlatList, Text, View, Image, Button, TouchableOpacit
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useRouter } from 'expo-router';
-import { ProductText, ProductHeader } from '@/app/SmartCartStyles';
+import { ProductText, ProductHeader, ProductBrand } from '@/app/SmartCartStyles';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Dimensions } from 'react-native';
 
 type Product = {
   id: string;
@@ -29,71 +31,74 @@ const SearchScreen = () => {
   // const [additives, setAdditives] = useState<string[]>(["E150d", "E104"]);
   const [allergens, setAllergens] = useState<string[]>(["peanuts", "milk"]);
 
+  const screenWidth = Dimensions.get('window').width;
+  const CARD_WIDTH = (screenWidth - 24 * 2) / 2; // 24 padding on each side + 16 margin between cards
+
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const router = useRouter(); 
+  const router = useRouter();
   // const navigation = useNavigation();
 
   const getProducts = async () => {
-  try {
-    setLoading(true);
-    setProducts([]); // clear old results
+    try {
+      setLoading(true);
+      setProducts([]); // clear old results
 
-    const page_size = 25;
-    const baseUrl = "https://us.openfoodfacts.net/cgi/search.pl";
-    const params = [
-      `search_terms=${encodeURIComponent(searchTerms)}`,
-      "search_simple=1",
-      "action=process",
-      "json=1",
-      "nocache=1",
-      `page_size=${page_size}`,
-      "sort_by=popularity_key",
-    ];
+      const page_size = 25;
+      const baseUrl = "https://us.openfoodfacts.net/cgi/search.pl";
+      const params = [
+        `search_terms=${encodeURIComponent(searchTerms)}`,
+        "search_simple=1",
+        "action=process",
+        "json=1",
+        "nocache=1",
+        `page_size=${page_size}`,
+        "sort_by=popularity_key",
+      ];
 
-    let index = 0;
+      let index = 0;
 
-    // Exclude allergens
-    allergens.forEach((a) => {
-      params.push(`tagtype_${index}=allergens`);
-      params.push(`tag_contains_${index}=does_not_contain`);
-      params.push(`tag_${index}=${encodeURIComponent(a)}`);
-      index++;
-    });
+      // Exclude allergens
+      allergens.forEach((a) => {
+        params.push(`tagtype_${index}=allergens`);
+        params.push(`tag_contains_${index}=does_not_contain`);
+        params.push(`tag_${index}=${encodeURIComponent(a)}`);
+        index++;
+      });
 
-    params.push(`tagtype_${index}=countries`);
-    params.push(`tag_contains_${index}=contains`);
-    params.push(`tag_${index}=United%20States`);
+      params.push(`tagtype_${index}=countries`);
+      params.push(`tag_contains_${index}=contains`);
+      params.push(`tag_${index}=United%20States`);
 
-    const url = `${baseUrl}?${params.join("&")}`;
-    const proxy = "https://corsproxy.io/?";
+      const url = `${baseUrl}?${params.join("&")}`;
+      const proxy = "https://corsproxy.io/?";
 
-    const response = await fetch(proxy + url, {
-      headers: {
-        Authorization: "Basic " + btoa("off:off"),
-        "User-Agent": "SmartCartApp/1.0 (maddieglaum@gmail.com)",
-      },
-    });
+      const response = await fetch(proxy + url, {
+        headers: {
+          Authorization: "Basic " + btoa("off:off"),
+          "User-Agent": "SmartCartApp/1.0 (maddieglaum@gmail.com)",
+        },
+      });
 
-    const json = await response.json();
-    const filteredProducts: Product[] = json.products.map((p: any) => ({
-      id: p.code,
-      title: p.product_name || "Unknown",
-      brand: p.brands || "Unknown",
-      ingredients: p.ingredients ? getIngredients(p.ingredients) : [],
-      image: p.image_front_url || p.image_url || null,
-      nutriscore: p.nutriscore_grade || null,
-      allergens: p.allergens || [],
-      additives: p.additives || [],
-      traces: getTraces(p.traces_tags) || [],
-    }));
+      const json = await response.json();
+      const filteredProducts: Product[] = json.products.map((p: any) => ({
+        id: p.code,
+        title: p.product_name || "Unknown",
+        brand: p.brands || "Unknown",
+        ingredients: p.ingredients ? getIngredients(p.ingredients) : [],
+        image: p.image_front_url || p.image_url || null,
+        nutriscore: p.nutriscore_grade || null,
+        allergens: p.allergens || [],
+        additives: p.additives || [],
+        traces: getTraces(p.traces_tags) || [],
+      }));
 
-    setProducts(filteredProducts);
-  } catch (error) {
-    console.error(error);
-  } finally {
-    setLoading(false);
-  }
-};
+      setProducts(filteredProducts);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getIngredients = (ingredients: any[]) => {
     let filteredIngredients: string[] = [];
@@ -116,64 +121,63 @@ const SearchScreen = () => {
     return filteredTraces;
   };
 
+
+
+  /// RETURN
   return (
-    
-    <View style={{ flex: 1, padding: 24, backgroundColor: 'white', gap: 8 }}>
-      
+
+    <SafeAreaView style={{ flex: 1, padding: 24, backgroundColor: 'white', gap: 8 }}>
+
+      {/* SEARCH BAR */}
+
       <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#f0f0f0",
-        borderRadius: 8,
-        paddingHorizontal: 10,
-        marginBottom: 12,
-      }}
-    >
-      <Ionicons name="search" size={20} color="gray" style={{ marginRight: 6 }} />
-      <TextInput
-        value={searchTerms}
-        onChangeText={setSearchTerms}
-        placeholder="Search Products"
-        placeholderTextColor="gray"
         style={{
-          flex: 1,
-          paddingVertical: 8,
-          fontFamily: "DM-Sans",
-          color: "black",
-        }}
-      />
-    </View>
-      <TouchableOpacity
-        onPress={() => {
-          setProducts([]);
-          setLoading(true);
-          getProducts();
-        }}
-        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: "#f0f0f0",
+          borderRadius: 8,
+          paddingHorizontal: 10,
           marginBottom: 12,
-          padding: 10,
-          backgroundColor: '#8d3462ff',
-          borderRadius: 4,
-          alignItems: 'center',
+          height: 40,
         }}
       >
-        <Text style={{ color: 'white', fontFamily: 'DM-Sans' }}>Search</Text>
-      </TouchableOpacity>
+        <Ionicons name="search" size={24} color="gray" style={{ marginRight: 8 }} />
+        <TextInput
+          value={searchTerms}
+          onChangeText={setSearchTerms}
+          placeholder="Search Products"
+          placeholderTextColor="gray"
+          style={{
+            fontSize: 16,
+            flex: 1,
+            paddingVertical: 8,
+            fontFamily: "DM-Sans",
+            color: "gray",
+          }}
+          returnKeyType='search'
+          onSubmitEditing={() => {
+            setProducts([]);
+            setLoading(true);
+            getProducts();
+          }}
+        />
+      </View>
 
 
+
+      {/* SEARCH RESULTS */}
       {!isLoading && searchTerms.trim() !== "" && products.length > 0 && (
-    <Text
-      style={{
-        marginBottom: 12,
-        fontFamily: "DM-Sans",
-        fontSize: 16,
-        color: "gray",
-      }}
-    >
-      Showing results for <Text style={{ fontWeight: "600", color: "black" }}>{searchTerms}</Text>
-    </Text>
-  )}
+        <Text
+          style={{
+            marginBottom: 12,
+            fontFamily: "DM-Sans",
+            fontSize: 16,
+            color: "gray",
+          }}
+        >
+          Showing results for <Text style={{ fontWeight: "600", color: "black" }}>{searchTerms}</Text>
+        </Text>
+      )}
 
       {isLoading ? (
         <ActivityIndicator />
@@ -182,75 +186,66 @@ const SearchScreen = () => {
           data={products}
           keyExtractor={(item) => item.id}
           numColumns={2}
-          columnWrapperStyle={{ justifyContent: 'space-between' }}
-          renderItem={({ item }) => (
-            
-            <View
-              style={{
-                flex: 1,
-                margin: 8,
-                padding: 12,
-                borderWidth: 1,
-                borderColor: '#ddd',
-                borderRadius: 8,
-                backgroundColor: '#fafafa',
-                alignItems: 'center',
-              }}
+          columnWrapperStyle={{ justifyContent: 'flex-start' }}
+          renderItem={({ item, index }) => {
+            const isLeft = index % 2 === 0; // left column if even index
+            const isLastRow = index >= products.length - (products.length % 2 || 2); // last row check
+
+            return (
+              <View
+                style={{
+                  width: CARD_WIDTH,
+                  padding: 8,
+                  borderRightWidth: isLeft ? 1 : 0,
+                  borderBottomWidth: isLastRow ? 0 : 1,
+                  borderColor: '#ddd',
+                  // alignItems: 'center',
+                }}
               >
                 <TouchableOpacity onPress={() =>
                   router.push({
-                    pathname: "/ProductDetails",
+                    pathname: "/Details",
                     params: {
                       product: encodeURIComponent(JSON.stringify(item)),
                       allergens: encodeURIComponent(JSON.stringify(allergens)),
-                    },})
-
-                } style={{ alignItems: 'center' }}> 
-              {item.image ? (
-                <Image
-                  source={{ uri: item.image }}
-                  style={{ width: 100, height: 100, borderRadius: 8, marginBottom: 8 }}
-                  resizeMode="contain"
-                />
-              ) : (
-                <View
-                  style={{
-                    width: 100,
-                    height: 100,
-                    backgroundColor: '#eee',
-                    borderRadius: 8,
-                    marginBottom: 8,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text>No Image</Text>
-                </View>
-              )}
-              <ProductText>{item.brand}</ProductText>
-              <ProductHeader>{item.title}</ProductHeader>
-              <ProductText>Excellent Pick: {item.nutriscore}</ProductText>
-              {/* <Button
-                title="Details"
-                onPress={() =>
-                  router.push({
-                    pathname: "/ProductDetails",
-                    params: {
-                      product: JSON.stringify(item),
-                      allergens: JSON.stringify(allergens)
                     },
                   })
-                }
-              /> */}
-              </TouchableOpacity>
-            </View>
-            
-          )}
+                }>
+                  {item.image ? (
+                    <Image
+                      source={{ uri: item.image }}
+                      style={{ width: 100, height: 100, borderRadius: 8, marginBottom: 8, justifyContent: 'center', alignItems: 'center' }}
+                      resizeMode="contain"
+                    />
+                  ) : (
+                    <View
+                      style={{
+                        width: 100,
+                        height: 100,
+                        backgroundColor: '#eee',
+                        borderRadius: 8,
+                        marginBottom: 8,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text>No Image</Text>
+                    </View>
+                  )}
+                  <View style={{ marginLeft: 4, alignContent: 'flex-start' }}>
+                    <ProductBrand>{item.brand}</ProductBrand>
+                    <ProductHeader>{item.title}</ProductHeader>
+                    <ProductText>Pick Placeholder</ProductText>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            );
+          }}
         />
 
       )}
-      
-    </View>
+
+    </SafeAreaView>
   );
 };
 

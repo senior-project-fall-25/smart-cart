@@ -18,6 +18,8 @@ export default function RootLayout() {
     'DM-Sans': require('../assets/font/DM_Sans/static/DMSans-Regular.ttf'),
     'DM-Sans-Bold': require('../assets/font/DM_Sans/static/DMSans-Bold.ttf'),
     'DM-Sans-Italic': require('../assets/font/DM_Sans/static/DMSans-Italic.ttf'),
+    'DM-Sans-SemiBold': require('../assets/font/DM_Sans/static/DMSans-SemiBold.ttf'),
+    'DM-Sans-Medium': require('../assets/font/DM_Sans/static/DMSans-Medium.ttf'),
   });
 
   // Show a simple loading screen until fonts are ready
