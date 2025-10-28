@@ -1,33 +1,74 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import { useEffect } from "react";
+import { Tabs, router } from "expo-router";
+import { Image } from "react-native";
+import { auth } from "@/src/FirebaseConfig";
+import { onAuthStateChanged } from "firebase/auth";
+import { House,ListPlus,ScanQrCode, User } from 'lucide-react-native';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+
+
+
+export default function TabsLayout() {
+
+  useEffect(() => {
+
+      // checks if user its the current user if not it signs out
+      if (!auth.currentUser) {
+        router.replace("/signIn");
+        return;
+      }
+      // signs out on auth state change
+      const sub = onAuthStateChanged(auth, (u) => {
+        if (!u) router.replace("/signIn");
+      });
+      return sub;
+  }, []);
+
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
+    <Tabs screenOptions={{ headerShown: false }}>
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          headerShown: true,
+          headerTitleAlign: "center",
+
+          //logo 
+          headerTitle: () => (
+            <Image
+              source={require("../../assets/logos/logo1.png")}
+              style={{ height: 28, width: 200, resizeMode: "contain" }}
+            />
+          ),
+          tabBarLabel: "Home",
+          tabBarIcon: ({color, size}) => <House color={color} size={size} />,
         }}
       />
+
+
       <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+        name="list"
+        options={{ 
+          tabBarLabel: "List",
+          tabBarIcon: ({color, size}) => <ListPlus color={color} size={size} />,
+          
+        }}
+        
+      />
+      <Tabs.Screen
+        name="scanner"
+        options={{ 
+          tabBarLabel: "Scan",
+          tabBarIcon: ({color, size}) => <ScanQrCode color={color} size={size} />,
+
+         }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{ 
+          tabBarLabel: "Profile",
+          tabBarIcon: ({color, size}) => <User color={color} size={size} />,
         }}
       />
     </Tabs>
