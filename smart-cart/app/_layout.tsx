@@ -1,61 +1,95 @@
-import { Stack } from "expo-router";
+
 import { useEffect, useState } from "react";
 import {  User,onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/src/FirebaseConfig";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, View,Text } from "react-native";
 import { useFonts } from "expo-font";
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import 'react-native-reanimated';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 
 
+export const unstable_settings = {
+  anchor: 'index',
+};
 
 export default function RootLayout() {
 
-const [loaded] = useFonts({
-  DMSans: require("../assets/font/DM_Sans/DMSans-VariableFont_opsz,wght.ttf"),
-  DMSansItalic: require("../assets/font/DM_Sans/DMSans-Italic-VariableFont_opsz,wght.ttf"),
-  "DMSans-Bold": require("../assets/font/DM_Sans/static/DMSans-Bold.ttf"),
-});
-
-const [initializing, setInitializing] = useState(true);
-const [user, setUser] = useState<User | null>(null);
-
-useEffect(() => {
-
-  const subscriber = onAuthStateChanged(auth, (u) => {
-    setUser(u);
-    setInitializing(false);
+  // Load fonts here
+  const [fontsLoaded] = useFonts({
+    DMSans: require("../assets/font/DM_Sans/DMSans-VariableFont_opsz,wght.ttf"),
+    DMSansItalic: require("../assets/font/DM_Sans/DMSans-Italic-VariableFont_opsz,wght.ttf"),
+    "DMSans-Bold": require("../assets/font/DM_Sans/static/DMSans-Bold.ttf"),
+    "DM-Sans": require("../assets/font/DM_Sans/static/DMSans-Regular.ttf"),
+    "DM-Sans-Bold": require("../assets/font/DM_Sans/static/DMSans-Bold.ttf"),
+    "DM-Sans-Italic": require("../assets/font/DM_Sans/static/DMSans-Italic.ttf"),
+    "DM-Sans-SemiBold": require("../assets/font/DM_Sans/static/DMSans-SemiBold.ttf"),
+    "DM-Sans-Medium": require("../assets/font/DM_Sans/static/DMSans-Medium.ttf"),
   });
-  return subscriber
-},[]);
 
+  const [initializing, setInitializing] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
 
-if (!loaded) return null;
+  useEffect(() => {
 
+    const subscriber = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setInitializing(false);
+    });
+    return subscriber
+  },[]);
 
-if (initializing)
-  return(
-    <View 
-      style={{
-        alignItems: 'center',
-        justifyContent: 'center',
-        flex: 1,
+  const colorScheme = useColorScheme();
+
+  // Show a simple loading screen until fonts are ready
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Loading fonts...</Text>
+      </View>
+    );
+  }
+
+  if (initializing)
+    return(
+      <View 
+        style={{
+          alignItems: 'center',
+          justifyContent: 'center',
+          flex: 1,
+    
+        }}>
+        <ActivityIndicator size= "large" />
+      </View>
+    );
+
   
-      }}>
-      <ActivityIndicator size= "large" />
-    </View>
-  );
+  
+
+  
 
   return (
-  <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#fff' } }}>
+    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#fff' } }}>
 
-    <Stack.Screen name="(tabs)" />
-    <Stack.Screen name= "signIn"/>
-    <Stack.Screen name= "signUp"/>
-    <Stack.Screen name= "home"/>
-  </Stack>
+      
+      {/* Auth Routes */}
+      <Stack.Screen name= "signIn"/>
+      <Stack.Screen name= "signUp"/>
 
 
+      <Stack.Screen name= "home"/>
+      <Stack.Screen name="index" options={{ title: '' }} />
+      <Stack.Screen name="(Profile-Creation)" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+      </Stack>
+      <StatusBar style="auto" />
+    </ThemeProvider>
+  );
 
-  )
   
 }

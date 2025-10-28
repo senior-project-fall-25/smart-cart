@@ -44,7 +44,7 @@ export default function signUp() {
     setLoading(true); //lets spinning whel play while information loads
     try{
         const user  = await createUserWithEmailAndPassword(auth, email, password);
-        router.replace('/(tabs)/home');
+        router.replace('/introduction');
     } catch (error: any){
         const err = error as FirebaseError;
         alert('Sign up in Failed: ' + error.message);
@@ -72,7 +72,7 @@ export default function signUp() {
         const cred = GoogleAuthProvider.credential(idToken);
         await signInWithCredential(auth, cred);
         setLoading(false);
-        router.replace('/(tabs)/home');
+        router.replace('/introduction');
         } else if (response?.type === "error") {
         setLoading(false);
         alert("Google sign-in error");

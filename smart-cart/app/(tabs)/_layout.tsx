@@ -4,6 +4,7 @@ import { Image } from "react-native";
 import { auth } from "@/src/FirebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
 import { House,ListPlus,ScanQrCode, User } from 'lucide-react-native';
+import { IconSymbol } from "@/components/ui/icon-symbol";
 
 
 
@@ -66,9 +67,20 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="profile"
-        options={{ 
+        options={{
           tabBarLabel: "Profile",
-          tabBarIcon: ({color, size}) => <User color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="search"
+        options={{
+          title: "Search",
+          tabBarLabel: "Search",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="magnifyingglass.circle.fill" color={color} />
+          ),
         }}
       />
     </Tabs>
