@@ -18,6 +18,7 @@ type Product = {
   traces?: string[];
   image?: string | null;
   nutriscore?: string | null;
+  pick?: string | null; 
 };
 type RootStackParamList = {
   Details: { product: Product };
@@ -43,7 +44,7 @@ const ListScreen = () => {
       setLoading(true);
       setProducts([]); // clear old results
 
-      const page_size = 25;
+      const page_size = 26;
       const baseUrl = "https://us.openfoodfacts.net/cgi/search.pl";
       const params = [
         `search_terms=${encodeURIComponent(searchTerms)}`,
@@ -83,13 +84,14 @@ const ListScreen = () => {
       const filteredProducts: Product[] = json.products.map((p: any) => ({
         id: p.code,
         title: p.product_name || "Unknown",
-        brand: p.brands || "Unknown",
+        brand: p.brands || "No Brand",
         ingredients: p.ingredients ? getIngredients(p.ingredients) : [],
         image: p.image_front_url || p.image_url || null,
         nutriscore: p.nutriscore_grade || null,
         allergens: p.allergens || [],
         additives: p.additives || [],
         traces: getTraces(p.traces_tags) || [],
+        pick: pickCalcuator(getTraces(p.traces_tags) || []) || null,
       }));
 
       setProducts(filteredProducts);
@@ -121,6 +123,26 @@ const ListScreen = () => {
     return filteredTraces;
   };
 
+  
+  const pickCalcuator = (traces: string[]) => {
+    const found = traces.some((trace: string) =>
+      allergens?.includes(trace.toLowerCase()));
+    if (found) {
+      return "Trace Warning"; 
+    }
+    return null;  
+  }
+  //   const tracesArray = Array.isArray(data.traces) // traces 
+  //   ? data.traces
+  //   : typeof data.traces === "string"
+  //     ? data.traces.split(",").map((t: string) => t.trim().toLowerCase())
+  //     : [];
+
+  // const found = tracesArray.some((trace: string) =>
+  //   allergenList?.includes(trace.toLowerCase()));
+    // traces 
+    // nutriscore 
+    // on item load compare its traces to allergens 
 
 
   /// RETURN
@@ -167,6 +189,27 @@ const ListScreen = () => {
 
       {/* SEARCH RESULTS */}
       {!isLoading && searchTerms.trim() !== "" && products.length > 0 && (
+        <><Text
+          style={{
+            marginBottom: 0,
+            fontFamily: "DM-Sans",
+            fontSize: 16,
+            color: "gray",
+          }}
+        >
+          Showing results for <Text style={{ fontWeight: "600", color: "black" }}>{searchTerms}</Text>
+        </Text><Text
+          style={{
+            marginBottom: 12,
+            fontFamily: "DM-Sans",
+            fontSize: 12,
+            color: "gray",
+          }}
+        >
+            Products containing your allergens have been filtered out. 
+          </Text></>
+      )}
+      {!isLoading && searchTerms.trim() === "" && products.length === 0 && (
         <Text
           style={{
             marginBottom: 12,
@@ -175,10 +218,9 @@ const ListScreen = () => {
             color: "gray",
           }}
         >
-          Showing results for <Text style={{ fontWeight: "600", color: "black" }}>{searchTerms}</Text>
+          Try searching for a product above.
         </Text>
       )}
-
       {isLoading ? (
         <ActivityIndicator />
       ) : (
@@ -211,6 +253,14 @@ const ListScreen = () => {
                     },
                   })
                 }>
+                  {item.pick !== null ? (
+                    <Ionicons name="warning" size={24} color="#ff5757" style={{ 
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      zIndex: 1,
+                     }} />
+                  ) : null}
                   {item.image ? (
                     <Image
                       source={{ uri: item.image }}
@@ -218,24 +268,16 @@ const ListScreen = () => {
                       resizeMode="contain"
                     />
                   ) : (
-                    <View
-                      style={{
-                        width: 100,
-                        height: 100,
-                        backgroundColor: '#eee',
-                        borderRadius: 8,
-                        marginBottom: 8,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Text>No Image</Text>
-                    </View>
+                    <Image
+                      source={require('../../assets/logos/logo3.png')}
+                      style={{ width: 100, height: 100, marginBottom: 8, marginTop: 8, justifyContent: 'center', alignItems: 'center', opacity: 0.5 }}
+                      resizeMode="contain"
+                    />
                   )}
                   <View style={{ marginLeft: 4, alignContent: 'flex-start' }}>
                     <ProductBrand>{item.brand}</ProductBrand>
                     <ProductHeader>{item.title}</ProductHeader>
-                    <ProductText>Pick Placeholder</ProductText>
+                    <ProductText>{item.pick}</ProductText>
                   </View>
                 </TouchableOpacity>
               </View>
@@ -248,6 +290,8 @@ const ListScreen = () => {
     </SafeAreaView>
   );
 };
+
+
 
 
 

@@ -27,7 +27,7 @@ export default function ProductDetails({ }: { allergens?: string[] }) {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: "white", padding: 16 }}>
-      {data.image && (
+      { data.image ? (
         <Image
           source={{ uri: data.image }}
           style={{
@@ -38,11 +38,23 @@ export default function ProductDetails({ }: { allergens?: string[] }) {
           }}
           resizeMode="contain"
         />
+      ) : (
+        <Image
+          source={require('../assets/logos/logo3.png')}
+          style={{
+            width: "100%",
+            height: 250,
+            borderRadius: 12,
+            marginBottom: 16,
+            opacity: 0.5,
+          }}
+          resizeMode="contain"
+        />
       )}
-      <Text style={{ fontFamily: "DM-Sans", fontSize: 16, color: "gray" }}>
+      <Text style={{ fontFamily: "DM-Sans", fontSize: 16, color: "gray", textTransform: "capitalize" }}>
         {data.brand}
       </Text>
-      <Text style={{ fontFamily: "DM-Sans-Medium", fontSize: 22, fontWeight: "bold"}}>
+      <Text style={{ fontFamily: "DM-Sans-Medium", fontSize: 22, fontWeight: "bold", textTransform: "capitalize"}}>
         {data.title}
       </Text>
       
