@@ -1,8 +1,8 @@
 
 import { useEffect, useState } from "react";
-import {  User,onAuthStateChanged } from "firebase/auth";
+import { User, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/src/FirebaseConfig";
-import { ActivityIndicator, View,Text } from "react-native";
+import { ActivityIndicator, View, Text } from "react-native";
 import { useFonts } from "expo-font";
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
@@ -40,7 +40,7 @@ export default function RootLayout() {
       setInitializing(false);
     });
     return subscriber
-  },[]);
+  }, []);
 
   const colorScheme = useColorScheme();
 
@@ -54,42 +54,50 @@ export default function RootLayout() {
   }
 
   if (initializing)
-    return(
-      <View 
+    return (
+      <View
         style={{
           alignItems: 'center',
           justifyContent: 'center',
           flex: 1,
-    
+
         }}>
-        <ActivityIndicator size= "large" />
+        <ActivityIndicator size="large" />
       </View>
     );
 
-  
-  
 
-  
+
+
+
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#fff' } }}>
 
-      
-      {/* Auth Routes */}
-      <Stack.Screen name= "signIn"/>
-      <Stack.Screen name= "signUp"/>
+
+        {/* Auth Routes */}
+        <Stack.Screen name="signIn" />
+        <Stack.Screen name="signUp" />
 
 
-      <Stack.Screen name= "home"/>
-      <Stack.Screen name="index" options={{ title: '' }} />
-      <Stack.Screen name="(Profile-Creation)" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        <Stack.Screen name="home" />
+        <Stack.Screen name="index" options={{ title: '' }} />
+        <Stack.Screen name="(Profile-Creation)" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="Details"
+          options={{
+            title: "Product Details",
+            headerShown: true,
+            headerBackTitle: "Back",
+          }}
+        />
+        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
   );
 
-  
+
 }
