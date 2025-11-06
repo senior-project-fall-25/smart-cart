@@ -18,8 +18,6 @@ const Search = ({data, setSelected, selected}: Props) => {
     const [filteredData, setFilteredData] = useState<Array<string>>([]);
     const [showDropdown, setShowDropdown] = useState(false);
 
-    console.log(selected)
-
     const maxItems = 5;
     
 
@@ -32,14 +30,10 @@ const Search = ({data, setSelected, selected}: Props) => {
             var filtered = [];
 
             const currText = text.toLowerCase().trim();
-
-            console.log(currText);
             
             filtered = data.filter(function(item) {
                 return item.toLowerCase().startsWith(currText)
             });
-
-            console.log(filtered);
 
             if (filtered.length == 0){ // if no results
                 filtered.push("No results! Try searching for a synonym of your allergy.")

@@ -4,6 +4,7 @@ import { HeaderTitle } from "@react-navigation/elements";
 import { auth,db } from "@/src/FirebaseConfig";
 import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { useEffect } from "react";
+import {changeAllergens} from "../requests";
 
 
 export default function FinishProfile() {
@@ -12,28 +13,11 @@ export default function FinishProfile() {
 
     const currentUser = auth.currentUser;
 
-    const addAllergens = async (allergens : Array<string>) => {
-
-        const userID = currentUser?.uid;
-
-        if(userID){
-            try {
-                const userRef = doc(db, "users", userID);
-
-                await updateDoc (userRef, {
-                    allergies: allergens,
-                })
-                
-                console.log('added allergens added to id: ', userID);
-                router.replace('/(tabs)/home')
-            }
-            catch (error) {
-                console.log('error creating new profile: ', error);
-                return null;
-            }
-
-        }
-    };
+    const finish = (allergens : Array<string>) => {
+        // add alergies to user in users table
+        changeAllergens(allergens);
+        router.replace('/(tabs)/home')
+    }
 
     
 
@@ -47,7 +31,7 @@ export default function FinishProfile() {
     function allergenTag(item: string, index: any){
         return ( 
             <TouchableOpacity key={index} style={[styles.tag, styles.selectedTag]}>
-                <Text style={styles.body}>{item}</Text>
+                <Text style={[styles.body, {color: 'white'}]}>{item}</Text>
             </TouchableOpacity>
         );
     }
@@ -66,7 +50,7 @@ export default function FinishProfile() {
                 </ScrollView>
  
             <TouchableOpacity
-                onPress={()=> addAllergens(allergens)}
+                onPress={()=> finish(allergens)}
                 style={styles.button}
             >
                 <Text style={[styles.body, {color: 'white'}]}>Next</Text>

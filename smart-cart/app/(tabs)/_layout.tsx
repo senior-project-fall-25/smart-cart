@@ -51,6 +51,16 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="list"
         options={{ 
+          headerShown: true,
+          headerTitleAlign: "center",
+
+          //logo 
+          headerTitle: () => (
+            <Image
+              source={require("../../assets/logos/logo1.png")}
+              style={{ height: 28, width: 200, resizeMode: "contain" }}
+            />
+          ),
           tabBarLabel: "List",
           tabBarIcon: ({color, size}) => <ListPlus color={color} size={size} />,
           
@@ -60,6 +70,16 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="scanner"
         options={{ 
+          headerShown: true,
+          headerTitleAlign: "center",
+
+          //logo 
+          headerTitle: () => (
+            <Image
+              source={require("../../assets/logos/logo1.png")}
+              style={{ height: 28, width: 200, resizeMode: "contain" }}
+            />
+          ),
           tabBarLabel: "Scan",
           tabBarIcon: ({color, size}) => <ScanQrCode color={color} size={size} />,
 
@@ -68,6 +88,16 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
+          headerShown: true,
+          headerTitleAlign: "center",
+
+          //logo 
+          headerTitle: () => (
+            <Image
+              source={require("../../assets/logos/logo1.png")}
+              style={{ height: 28, width: 200, resizeMode: "contain" }}
+            />
+          ),
           tabBarLabel: "Profile",
           tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
         }}

@@ -15,8 +15,6 @@ interface Props {
 export default function AddAllergens({selected, setSelected} : Props) {
     const [allergens,setAllergens] = useState<Array<string>>([...selected]);
 
-    console.log(allergens)
-
     function addAllergen(selected : string){
         var newAllergens: string[] = [...allergens]
         if (!newAllergens.includes(selected)){
@@ -35,7 +33,7 @@ export default function AddAllergens({selected, setSelected} : Props) {
 
         return ( 
             <TouchableOpacity  key={index} onPress={()=>{removeAllergen(item)}}style={[styles.tag, styles.selectedTag]}>
-                <Text style={styles.body}>{item}</Text>
+                <Text style={[styles.body, {color: 'white'}]}>{item}</Text>
             </TouchableOpacity>
         );
         
@@ -45,12 +43,12 @@ export default function AddAllergens({selected, setSelected} : Props) {
         <View style={styles.container}>
             <Search data={allergenNames} setSelected={addAllergen} selected={""}/>
             <ScrollView style={styles.scrollBox} contentContainerStyle={styles.row}>
-                    {
-                        allergens.map((item, index) => (
-                            allergenTag(item, index)
+                {
+                    allergens.map((item, index) => (
+                        allergenTag(item, index)
 
-                        ))
-                    }
+                    ))
+                }
             </ScrollView>
         </View>
     )
