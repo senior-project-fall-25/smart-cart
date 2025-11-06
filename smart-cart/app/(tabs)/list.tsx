@@ -284,6 +284,7 @@ const ListScreen = () => {
                 onValueChange={setTempIncludeAllergens}
               />
             </View>
+            <Text style={{ fontSize: 12, color: 'gray', fontFamily: 'DM-Sans', marginTop: 12}}>Show products that contain your allergens in their ingredient lists.</Text>
             <View style={{ flexDirection: 'row', marginTop: 20, gap: 20 }}>
               <Button
                 title="Close"
