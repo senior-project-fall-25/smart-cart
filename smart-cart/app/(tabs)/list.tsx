@@ -88,7 +88,7 @@ const ListScreen = () => {
       let index = 0;
 
       // Exclude allergens
-      console.log("including products with allergens: " + includeAllergens);
+      // console.log("including products with allergens: " + includeAllergens);
       if (!includeAllergens) {
         allergens.forEach((a) => {
           params.push(`tagtype_${index}=allergens`);
@@ -123,7 +123,7 @@ const ListScreen = () => {
         allergens: p.allergens || [],
         additives: p.additives || [],
         traces: getTraces(p.traces_tags) || [],
-        pick: pickCalcuator(getTraces(p.traces_tags) || []) || null,
+        pick: pickCalcuator(getTraces(p.traces_tags) || [], p.allergens || [], p.nutriscore_grade || null),
       }));
 
       setProducts(filteredProducts);
@@ -155,15 +155,30 @@ const ListScreen = () => {
     return filteredTraces;
   };
 
+  const pickCalcuator = (traces: string[], pallergens: string[], nutriscore?: string) => {
 
-  const pickCalcuator = (traces: string[]) => {
-    const found = traces.some((trace: string) =>
+    const foundTraces = traces.some((trace: string) =>
       allergens?.includes(trace.toLowerCase()));
-    if (found) {
-      return "Trace Warning";
+
+    const foundAllergens = allergens.some((allergen: string) =>
+      pallergens?.includes(allergen.toLowerCase()));
+
+    if (foundAllergens) {
+      return "Dangerous Pick"
     }
-    return null;
+    else if (foundTraces) {
+      return "Risky Pick"
+    }
+    else if (nutriscore === "a" || nutriscore === "b" || nutriscore === "c") {
+      return "Excellent Pick"
+    }
+    else {
+      return "Safe Pick"
+    }
   }
+
+
+
   //   const tracesArray = Array.isArray(data.traces) // traces 
   //   ? data.traces
   //   : typeof data.traces === "string"
@@ -302,8 +317,7 @@ const ListScreen = () => {
             color: "gray",
           }}
         >
-          {includeAllergens ? "Products containing your allergens are being shown." : "Products containing your allergens have been filtered out."}
-            
+            {includeAllergens ? "Products containing your allergens are being shown." : "Products containing your allergens have been filtered out."}
           </Text></>
       )}
       {!isLoading && searchTerms.trim() === "" && products.length === 0 && (
@@ -331,57 +345,112 @@ const ListScreen = () => {
             const isLeft = index % 2 === 0; // left column if even index
             const isLastRow = index >= products.length - (products.length % 2 || 2); // last row check
 
+            // Define colors for pick types
+            const pickStyles: Record<string, { color: string; border: string }> = {
+              'Dangerous Pick': { color: '#ff4d4d', border: '#ffcccc' },
+              'Risky Pick': { color: '#ff914d', border: '#ffd6b3' },
+              'Safe Pick': { color: '#5ca3ff', border: '#b3d4ff' },
+              'Excellent Pick': { color: '#00b578', border: '#a3f5ce' },
+            };
+
+            const pickStyle = pickStyles[item.pick || 'Safe Pick'];
+
             return (
               <View
                 style={{
                   width: CARD_WIDTH,
-                  padding: 8,
+                  padding: 12,
                   borderRightWidth: isLeft ? 1 : 0,
                   borderBottomWidth: isLastRow ? 0 : 1,
                   borderColor: '#ddd',
-                  // alignItems: 'center',
                 }}
               >
-                <TouchableOpacity onPress={() =>
-                  router.push({
-                    pathname: "/Details",
-                    params: {
-                      product: encodeURIComponent(JSON.stringify(item)),
-                      allergens: encodeURIComponent(JSON.stringify(allergens)),
-                    },
-                  })
-                }>
-                  {item.pick !== null ? (
-                    <Ionicons name="warning" size={24} color="#ff5757" style={{
-                      position: 'absolute',
-                      top: 8,
-                      right: 8,
-                      zIndex: 1,
-                    }} />
-                  ) : null}
-                  {item.image ? (
-                    <Image
-                      source={{ uri: item.image }}
-                      style={{ width: 100, height: 100, borderRadius: 8, marginBottom: 8, justifyContent: 'center', alignItems: 'center' }}
-                      resizeMode="contain"
-                    />
-                  ) : (
-                    <Image
-                      source={require('../../assets/logos/logo3.png')}
-                      style={{ width: 100, height: 100, marginBottom: 8, marginTop: 8, justifyContent: 'center', alignItems: 'center', opacity: 0.5 }}
-                      resizeMode="contain"
-                    />
-                  )}
-                  <View style={{ marginLeft: 4, alignContent: 'flex-start' }}>
+                <TouchableOpacity
+                  onPress={() =>
+                    router.push({
+                      pathname: '/Details',
+                      params: {
+                        product: encodeURIComponent(JSON.stringify(item)),
+                        allergens: encodeURIComponent(JSON.stringify(allergens)),
+                      },
+                    })
+                  }
+                >
+                  {/* Product Image */}
+                  <View style={{ alignItems: 'center', marginBottom: 10 }}>
+                    {item.image ? (
+                      <Image
+                        source={{ uri: item.image }}
+                        style={{
+                          width: 100,
+                          height: 100,
+                          borderRadius: 8,
+                        }}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <Image
+                        source={require('../../assets/logos/logo3.png')}
+                        style={{
+                          width: 100,
+                          height: 100,
+                          opacity: 0.5,
+                        }}
+                        resizeMode="contain"
+                      />
+                    )}
+                  </View>
+
+                  {/* Brand + Title */}
+                  <View style={{ marginLeft: 4 }}>
                     <ProductBrand>{item.brand}</ProductBrand>
                     <ProductHeader>{item.title}</ProductHeader>
-                    <ProductText>{item.pick}</ProductText>
                   </View>
+
+                  {/* Pick Pill */}
+                  {item.pick && (
+                    <View
+                      style={{
+                        marginTop: 8,
+                        alignSelf: 'flex-start',
+                        backgroundColor: 'white',
+                        borderColor: pickStyle.border,
+                        borderWidth: 1.5,
+                        borderRadius: 20,
+                        paddingVertical: 4,
+                        paddingHorizontal: 10,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 5,
+                      }}
+                    >
+                      {item.pick === 'Dangerous Pick' ? (
+                        <Ionicons name="warning" size={15} color={pickStyle.color} />
+                      ) : item.pick === 'Risky Pick' ? (
+                        <Ionicons name="alert-circle-outline" size={15} color={pickStyle.color} />
+                      ) : item.pick === 'Safe Pick' ? (
+                        <Ionicons name="checkmark-circle-outline" size={15} color={pickStyle.color} />
+                      ) : (
+                        <Ionicons name="star" size={15} color={pickStyle.color} />
+                      )}
+                      <Text
+                        style={{
+                          color: pickStyle.color,
+                          fontWeight: '700',
+                          fontSize: 12,
+                          fontFamily: 'DM-Sans-Medium',
+                        }}
+                      >
+                        {item.pick}
+                      </Text>
+                    </View>
+                  )}
                 </TouchableOpacity>
               </View>
             );
           }}
         />
+
 
       )}
 
