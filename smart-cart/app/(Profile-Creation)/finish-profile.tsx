@@ -1,11 +1,41 @@
 import { Text, View,Image, ScrollView, StyleSheet, TouchableOpacity} from "react-native";
 import { Link, useRouter, useLocalSearchParams } from "expo-router";
 import { HeaderTitle } from "@react-navigation/elements";
+import { auth,db } from "@/src/FirebaseConfig";
+import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
+import { useEffect } from "react";
 
 
 export default function FinishProfile() {
     const router = useRouter();
     const params = useLocalSearchParams();
+
+    const currentUser = auth.currentUser;
+
+    const addAllergens = async (allergens : Array<string>) => {
+
+        const userID = currentUser?.uid;
+
+        if(userID){
+            try {
+                const userRef = doc(db, "users", userID);
+
+                await updateDoc (userRef, {
+                    allergies: allergens,
+                })
+                
+                console.log('added allergens added to id: ', userID);
+                router.replace('/(tabs)/home')
+            }
+            catch (error) {
+                console.log('error creating new profile: ', error);
+                return null;
+            }
+
+        }
+    };
+
+    
 
     // @ts-expect-error
     const allergens: string[] = params.tagged ? JSON.parse(params.tagged) : []
@@ -36,7 +66,7 @@ export default function FinishProfile() {
                 </ScrollView>
  
             <TouchableOpacity
-                onPress={()=> router.replace('/(tabs)/search')}
+                onPress={()=> addAllergens(allergens)}
                 style={styles.button}
             >
                 <Text style={[styles.body, {color: 'white'}]}>Next</Text>

@@ -2,20 +2,22 @@
 import { useState, useEffect } from "react";
 import { router } from "expo-router";
 import { Text, View, StyleSheet, KeyboardAvoidingView, TextInput, Button, ActivityIndicator, Pressable, Alert } from "react-native";
-import { auth } from "@/src/FirebaseConfig";
+import { auth,db } from "@/src/FirebaseConfig";
 import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithCredential } from "firebase/auth";
 import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
 import { makeRedirectUri } from "expo-auth-session";
 import { FirebaseError } from "firebase/app";
 import { Image } from "react-native";
+import { addDoc, collection, doc, setDoc } from 'firebase/firestore';
 
 WebBrowser.maybeCompleteAuthSession();
 
 
 export default function signUp() {
 
-    const [name, setName] = useState ('');
+    const [firstName, setFirstName] = useState ('');
+    const [lastName, setLastName] = useState ('');
     const [email, setEmail] = useState ('');
     const [password, setPassword] = useState('');
     const [confirmPW, setConfirmPW] = useState('');
@@ -32,18 +34,49 @@ export default function signUp() {
         scopes: ["openid", "email", "profile"],
     });
 
+    const createUser = async () => {
+    
+        const userID = auth.currentUser?.uid;
+        
+
+        if (userID){
+          try {
+            // input the database, dabase table name, and custom doc id
+            const docRef = doc(db, "users", userID)
+            
+            await setDoc(docRef, {
+                userID: userID,
+                firstName: firstName,
+                lastName: lastName,
+                allergies: [],
+            });
+    
+            console.log('new user created with id: ', userID);
+          }
+          catch (error) {
+              console.log('error creating new profile: ', error);
+              return null;
+          }
+
+        }
+    };
+
     
 
     //sign up func
     const handlesignUp = async () => {
         if( password !== confirmPW){
-            alert("Passwprds Do Not Match!")
+            alert("Passwords Do Not Match!")
             return;
         }
     
     setLoading(true); //lets spinning whel play while information loads
+    
     try{
         const user  = await createUserWithEmailAndPassword(auth, email, password);
+
+        createUser();
+
         router.replace('/introduction');
     } catch (error: any){
         const err = error as FirebaseError;
@@ -100,9 +133,16 @@ export default function signUp() {
 
         <TextInput
           style={[styles.input, styles.inputText]}
-          value={name}
-          onChangeText={setName}
-          placeholder="Jane Doe"
+          value={firstName}
+          onChangeText={setFirstName}
+          placeholder="Jane"
+        
+        />
+        <TextInput
+          style={[styles.input, styles.inputText]}
+          value={lastName}
+          onChangeText={setLastName}
+          placeholder="Doe"
         
         />
         <TextInput
