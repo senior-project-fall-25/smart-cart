@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Text, View, Image, Button, TouchableOpacity, TextInput } from 'react-native';
+import { ActivityIndicator, FlatList, Text, View, Image, Button, TouchableOpacity, TextInput, Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useRouter } from 'expo-router';
 import { ProductText, ProductHeader, ProductBrand } from '@/app/SmartCartStyles';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Dimensions } from 'react-native';
+import { Dimensions, Switch } from 'react-native';
 
 type Product = {
   id: string;
@@ -18,7 +18,7 @@ type Product = {
   traces?: string[];
   image?: string | null;
   nutriscore?: string | null;
-  pick?: string | null; 
+  pick?: string | null;
 };
 type RootStackParamList = {
   Details: { product: Product };
@@ -29,17 +29,46 @@ const ListScreen = () => {
   const [isLoading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerms, setSearchTerms] = useState("");
+  const [modalVisible, setModalVisible] = useState(false);
   // const [additives, setAdditives] = useState<string[]>(["E150d", "E104"]);
   const [allergens, setAllergens] = useState<string[]>(["peanuts", "milk"]);
+  const [includeAllergens, setIncludeAllergens] = useState(false);
+  const [tempIncludeAllergens, setTempIncludeAllergens] = useState(false);
+  const toggleIncludeAllergens = () => setIncludeAllergens(previousState => !previousState);
 
   const screenWidth = Dimensions.get('window').width;
   const CARD_WIDTH = (screenWidth - 24 * 2) / 2; // 24 padding on each side + 16 margin between cards
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const router = useRouter();
+
+  const openModal = () => {
+    setTempIncludeAllergens(includeAllergens)
+    setModalVisible(true);
+  }
+  const closeModal = () => setModalVisible(false);
+
   // const navigation = useNavigation();
 
+  const applyModalChanges = () => {
+    if (tempIncludeAllergens !== includeAllergens) {
+      setIncludeAllergens(tempIncludeAllergens);
+    }
+    closeModal();
+  };
+
+  // re-run product search when includeAllergens changes
+  useEffect(() => {
+    if (searchTerms.trim() !== "") {
+      getProducts();
+    }
+  }, [includeAllergens]);
+
+
   const getProducts = async () => {
+    if (searchTerms.trim() === "") {
+      return;
+    }
     try {
       setLoading(true);
       setProducts([]); // clear old results
@@ -59,12 +88,15 @@ const ListScreen = () => {
       let index = 0;
 
       // Exclude allergens
-      allergens.forEach((a) => {
-        params.push(`tagtype_${index}=allergens`);
-        params.push(`tag_contains_${index}=does_not_contain`);
-        params.push(`tag_${index}=${encodeURIComponent(a)}`);
-        index++;
-      });
+      console.log("including products with allergens: " + includeAllergens);
+      if (!includeAllergens) {
+        allergens.forEach((a) => {
+          params.push(`tagtype_${index}=allergens`);
+          params.push(`tag_contains_${index}=does_not_contain`);
+          params.push(`tag_${index}=${encodeURIComponent(a)}`);
+          index++;
+        });
+      }
 
       params.push(`tagtype_${index}=countries`);
       params.push(`tag_contains_${index}=contains`);
@@ -119,18 +151,18 @@ const ListScreen = () => {
         filteredTraces.push(trace_tag.slice(3).replace(/-/g, " "));
       }
     });
-    console.log("filteredtraces: " + filteredTraces);
+    // console.log("filteredtraces: " + filteredTraces);
     return filteredTraces;
   };
 
-  
+
   const pickCalcuator = (traces: string[]) => {
     const found = traces.some((trace: string) =>
       allergens?.includes(trace.toLowerCase()));
     if (found) {
-      return "Trace Warning"; 
+      return "Trace Warning";
     }
-    return null;  
+    return null;
   }
   //   const tracesArray = Array.isArray(data.traces) // traces 
   //   ? data.traces
@@ -140,9 +172,9 @@ const ListScreen = () => {
 
   // const found = tracesArray.some((trace: string) =>
   //   allergenList?.includes(trace.toLowerCase()));
-    // traces 
-    // nutriscore 
-    // on item load compare its traces to allergens 
+  // traces 
+  // nutriscore 
+  // on item load compare its traces to allergens 
 
 
   /// RETURN
@@ -183,9 +215,73 @@ const ListScreen = () => {
             getProducts();
           }}
         />
+        <Ionicons
+          name="options"
+          size={28}
+          color="gray"
+          onPress={openModal}
+        />
       </View>
 
+      {/* OPTIONS MODAL */}
 
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        onRequestClose={closeModal}
+        transparent={true}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+          }}
+        >
+
+          <View
+            style={{
+              backgroundColor: 'white',
+              borderRadius: 12,
+              padding: 20,
+              width: '80%',
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ fontFamily: 'DM-Sans', fontSize: 18, marginBottom: 16 }}>
+              Filter Options
+            </Text>
+
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                width: '100%',
+              }}
+            >
+              <Text style={{ fontSize: 16, color: 'gray', fontFamily: 'DM-Sans' }}>Include allergens</Text>
+              <Switch
+                trackColor={{ false: '#767577', true: '#5ca3ff' }}
+                ios_backgroundColor="#3e3e3e"
+                value={tempIncludeAllergens}
+                onValueChange={setTempIncludeAllergens}
+              />
+            </View>
+            <View style={{ flexDirection: 'row', marginTop: 20, gap: 20 }}>
+              <Button
+                title="Close"
+                color={'gray'}
+                onPress={closeModal} />
+              <Button
+                title="Apply"
+                color={'#5ca3ff'}
+                onPress={applyModalChanges} />
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* SEARCH RESULTS */}
       {!isLoading && searchTerms.trim() !== "" && products.length > 0 && (
@@ -206,7 +302,8 @@ const ListScreen = () => {
             color: "gray",
           }}
         >
-            Products containing your allergens have been filtered out. 
+          {includeAllergens ? "Products containing your allergens are being shown." : "Products containing your allergens have been filtered out."}
+            
           </Text></>
       )}
       {!isLoading && searchTerms.trim() === "" && products.length === 0 && (
@@ -221,6 +318,7 @@ const ListScreen = () => {
           Try searching for a product above.
         </Text>
       )}
+
       {isLoading ? (
         <ActivityIndicator />
       ) : (
@@ -254,12 +352,12 @@ const ListScreen = () => {
                   })
                 }>
                   {item.pick !== null ? (
-                    <Ionicons name="warning" size={24} color="#ff5757" style={{ 
+                    <Ionicons name="warning" size={24} color="#ff5757" style={{
                       position: 'absolute',
                       top: 8,
                       right: 8,
                       zIndex: 1,
-                     }} />
+                    }} />
                   ) : null}
                   {item.image ? (
                     <Image
