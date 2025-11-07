@@ -53,15 +53,17 @@ export default function SetAllergens() {
     function allergenTag(item: string, index: any){
 
         var tagStyle = []
+        var tagText = {}
         tagStyle.push(styles.tag)
 
         if (tagged.includes(item)) {
             tagStyle.push(styles.selectedTag)
+            tagText = {color:'white'}
         }
 
         return ( 
             <TouchableOpacity onPress={()=> selectAllergen(item)} key={index} style={tagStyle}>
-                <Text style={styles.body}>{item}</Text>
+                <Text style={[styles.body, tagText]}>{item}</Text>
             </TouchableOpacity>
         );
         
@@ -163,6 +165,9 @@ const styles = StyleSheet.create({
     selectedTag: {
         backgroundColor: '#FF5151',
         color: 'white',
+    },
+    tagText: {
+        color: 'white'
     },
     row: {
         flexDirection: 'row',
