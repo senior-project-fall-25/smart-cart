@@ -35,6 +35,9 @@ const ListScreen = () => {
   const [includeAllergens, setIncludeAllergens] = useState(false);
   const [tempIncludeAllergens, setTempIncludeAllergens] = useState(false);
   const toggleIncludeAllergens = () => setIncludeAllergens(previousState => !previousState);
+  const [searchInput, setSearchInput] = useState("");
+
+
 
   const screenWidth = Dimensions.get('window').width;
   const CARD_WIDTH = (screenWidth - 24 * 2) / 2; // 24 padding on each side + 16 margin between cards
@@ -65,74 +68,71 @@ const ListScreen = () => {
   }, [includeAllergens]);
 
 
-  const getProducts = async () => {
-    if (searchTerms.trim() === "") {
-      return;
-    }
-    try {
-      setLoading(true);
-      setProducts([]); // clear old results
+  const getProducts = async (term = searchTerms) => {
+  if (term.trim() === "") return;
 
-      const page_size = 26;
-      const baseUrl = "https://us.openfoodfacts.net/cgi/search.pl";
-      const params = [
-        `search_terms=${encodeURIComponent(searchTerms)}`,
-        "search_simple=1",
-        "action=process",
-        "json=1",
-        "nocache=1",
-        `page_size=${page_size}`,
-        "sort_by=popularity_key",
-      ];
+  try {
+    setLoading(true);
+    setProducts([]);
 
-      let index = 0;
+    const page_size = 26;
+    const baseUrl = "https://us.openfoodfacts.net/cgi/search.pl";
+    const params = [
+      `search_terms=${encodeURIComponent(term)}`,
+      "search_simple=1",
+      "action=process",
+      "json=1",
+      "nocache=1",
+      `page_size=${page_size}`,
+      "sort_by=popularity_key",
+    ];
 
-      // Exclude allergens
-      // console.log("including products with allergens: " + includeAllergens);
-      if (!includeAllergens) {
-        allergens.forEach((a) => {
-          params.push(`tagtype_${index}=allergens`);
-          params.push(`tag_contains_${index}=does_not_contain`);
-          params.push(`tag_${index}=${encodeURIComponent(a)}`);
-          index++;
-        });
-      }
-
-      params.push(`tagtype_${index}=countries`);
-      params.push(`tag_contains_${index}=contains`);
-      params.push(`tag_${index}=United%20States`);
-
-      const url = `${baseUrl}?${params.join("&")}`;
-      const proxy = "https://corsproxy.io/?";
-
-      const response = await fetch(proxy + url, {
-        headers: {
-          Authorization: "Basic " + btoa("off:off"),
-          "User-Agent": "SmartCartApp/1.0 (maddieglaum@gmail.com)",
-        },
+    let index = 0;
+    if (!includeAllergens) {
+      allergens.forEach((a) => {
+        params.push(`tagtype_${index}=allergens`);
+        params.push(`tag_contains_${index}=does_not_contain`);
+        params.push(`tag_${index}=${encodeURIComponent(a)}`);
+        index++;
       });
-
-      const json = await response.json();
-      const filteredProducts: Product[] = json.products.map((p: any) => ({
-        id: p.code,
-        title: p.product_name || "Unknown",
-        brand: p.brands || "No Brand",
-        ingredients: p.ingredients ? getIngredients(p.ingredients) : [],
-        image: p.image_front_url || p.image_url || null,
-        nutriscore: p.nutriscore_grade || null,
-        allergens: p.allergens || [],
-        additives: p.additives || [],
-        traces: getTraces(p.traces_tags) || [],
-        pick: pickCalcuator(getTraces(p.traces_tags) || [], p.allergens || [], p.nutriscore_grade || null),
-      }));
-
-      setProducts(filteredProducts);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
     }
-  };
+
+    params.push(`tagtype_${index}=countries`);
+    params.push(`tag_contains_${index}=contains`);
+    params.push(`tag_${index}=United%20States`);
+
+    const url = `${baseUrl}?${params.join("&")}`;
+    const proxy = "https://corsproxy.io/?";
+
+    const response = await fetch(proxy + url, {
+      headers: {
+        Authorization: "Basic " + btoa("off:off"),
+        "User-Agent": "SmartCartApp/1.0 (maddieglaum@gmail.com)",
+      },
+    });
+
+    const json = await response.json();
+    const filteredProducts: Product[] = json.products.map((p: any) => ({
+      id: p.code,
+      title: p.product_name || "Unknown",
+      brand: p.brands || "No Brand",
+      ingredients: p.ingredients ? getIngredients(p.ingredients) : [],
+      image: p.image_front_url || p.image_url || null,
+      nutriscore: p.nutriscore_grade || null,
+      allergens: p.allergens || [],
+      additives: p.additives || [],
+      traces: getTraces(p.traces_tags) || [],
+      pick: pickCalcuator(getTraces(p.traces_tags) || [], p.allergens || [], p.nutriscore_grade || null),
+    }));
+
+    setProducts(filteredProducts);
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const getIngredients = (ingredients: any[]) => {
     let filteredIngredients: string[] = [];
@@ -212,8 +212,8 @@ const ListScreen = () => {
       >
         <Ionicons name="search" size={24} color="gray" style={{ marginRight: 8 }} />
         <TextInput
-          value={searchTerms}
-          onChangeText={setSearchTerms}
+          value={searchInput}
+          onChangeText={setSearchInput}
           placeholder="Search Products"
           placeholderTextColor="gray"
           style={{
@@ -223,13 +223,15 @@ const ListScreen = () => {
             fontFamily: "DM-Sans",
             color: "gray",
           }}
-          returnKeyType='search'
+          returnKeyType="search"
           onSubmitEditing={() => {
             setProducts([]);
             setLoading(true);
-            getProducts();
+            setSearchTerms(searchInput); // <— triggers new search term
+            getProducts(searchInput);    // <— pass it directly to API call
           }}
         />
+
         <Ionicons
           name="options"
           size={28}
@@ -284,7 +286,7 @@ const ListScreen = () => {
                 onValueChange={setTempIncludeAllergens}
               />
             </View>
-            <Text style={{ fontSize: 12, color: 'gray', fontFamily: 'DM-Sans', marginTop: 12}}>Show products that contain your allergens in their ingredient lists.</Text>
+            <Text style={{ fontSize: 12, color: 'gray', fontFamily: 'DM-Sans', marginTop: 12 }}>Show products that contain your allergens in their ingredient lists.</Text>
             <View style={{ flexDirection: 'row', marginTop: 20, gap: 20 }}>
               <Button
                 title="Close"
