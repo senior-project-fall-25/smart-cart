@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Text, View, Image, Button, TouchableOpacity, TextInput } from 'react-native';
+import { ActivityIndicator, FlatList, Text, View, Image, Button, TouchableOpacity, TextInput, Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useRouter } from 'expo-router';
 import { ProductText, ProductHeader, ProductBrand } from '@/app/SmartCartStyles';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Dimensions } from 'react-native';
+import { Dimensions, Switch } from 'react-native';
 
 type Product = {
   id: string;
@@ -18,7 +18,7 @@ type Product = {
   traces?: string[];
   image?: string | null;
   nutriscore?: string | null;
-  pick?: string | null; 
+  pick?: string | null;
 };
 type RootStackParamList = {
   Details: { product: Product };
@@ -29,78 +29,110 @@ const ListScreen = () => {
   const [isLoading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerms, setSearchTerms] = useState("");
+  const [modalVisible, setModalVisible] = useState(false);
   // const [additives, setAdditives] = useState<string[]>(["E150d", "E104"]);
   const [allergens, setAllergens] = useState<string[]>(["peanuts", "milk"]);
+  const [includeAllergens, setIncludeAllergens] = useState(false);
+  const [tempIncludeAllergens, setTempIncludeAllergens] = useState(false);
+  const toggleIncludeAllergens = () => setIncludeAllergens(previousState => !previousState);
+  const [searchInput, setSearchInput] = useState("");
+
+
 
   const screenWidth = Dimensions.get('window').width;
   const CARD_WIDTH = (screenWidth - 24 * 2) / 2; // 24 padding on each side + 16 margin between cards
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const router = useRouter();
+
+  const openModal = () => {
+    setTempIncludeAllergens(includeAllergens)
+    setModalVisible(true);
+  }
+  const closeModal = () => setModalVisible(false);
+
   // const navigation = useNavigation();
 
-  const getProducts = async () => {
-    try {
-      setLoading(true);
-      setProducts([]); // clear old results
+  const applyModalChanges = () => {
+    if (tempIncludeAllergens !== includeAllergens) {
+      setIncludeAllergens(tempIncludeAllergens);
+    }
+    closeModal();
+  };
 
-      const page_size = 26;
-      const baseUrl = "https://us.openfoodfacts.net/cgi/search.pl";
-      const params = [
-        `search_terms=${encodeURIComponent(searchTerms)}`,
-        "search_simple=1",
-        "action=process",
-        "json=1",
-        "nocache=1",
-        `page_size=${page_size}`,
-        "sort_by=popularity_key",
-      ];
+  // re-run product search when includeAllergens changes
+  useEffect(() => {
+    if (searchTerms.trim() !== "") {
+      getProducts();
+    }
+  }, [includeAllergens]);
 
-      let index = 0;
 
-      // Exclude allergens
+  const getProducts = async (term = searchTerms) => {
+  if (term.trim() === "") return;
+
+  try {
+    setLoading(true);
+    setProducts([]);
+
+    const page_size = 26;
+    const baseUrl = "https://us.openfoodfacts.net/cgi/search.pl";
+    const params = [
+      `search_terms=${encodeURIComponent(term)}`,
+      "search_simple=1",
+      "action=process",
+      "json=1",
+      "nocache=1",
+      `page_size=${page_size}`,
+      "sort_by=popularity_key",
+    ];
+
+    let index = 0;
+    if (!includeAllergens) {
       allergens.forEach((a) => {
         params.push(`tagtype_${index}=allergens`);
         params.push(`tag_contains_${index}=does_not_contain`);
         params.push(`tag_${index}=${encodeURIComponent(a)}`);
         index++;
       });
-
-      params.push(`tagtype_${index}=countries`);
-      params.push(`tag_contains_${index}=contains`);
-      params.push(`tag_${index}=United%20States`);
-
-      const url = `${baseUrl}?${params.join("&")}`;
-      const proxy = "https://corsproxy.io/?";
-
-      const response = await fetch(proxy + url, {
-        headers: {
-          Authorization: "Basic " + btoa("off:off"),
-          "User-Agent": "SmartCartApp/1.0 (maddieglaum@gmail.com)",
-        },
-      });
-
-      const json = await response.json();
-      const filteredProducts: Product[] = json.products.map((p: any) => ({
-        id: p.code,
-        title: p.product_name || "Unknown",
-        brand: p.brands || "No Brand",
-        ingredients: p.ingredients ? getIngredients(p.ingredients) : [],
-        image: p.image_front_url || p.image_url || null,
-        nutriscore: p.nutriscore_grade || null,
-        allergens: p.allergens || [],
-        additives: p.additives || [],
-        traces: getTraces(p.traces_tags) || [],
-        pick: pickCalcuator(getTraces(p.traces_tags) || []) || null,
-      }));
-
-      setProducts(filteredProducts);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
     }
-  };
+
+    params.push(`tagtype_${index}=countries`);
+    params.push(`tag_contains_${index}=contains`);
+    params.push(`tag_${index}=United%20States`);
+
+    const url = `${baseUrl}?${params.join("&")}`;
+    const proxy = "https://corsproxy.io/?";
+
+    const response = await fetch(proxy + url, {
+      headers: {
+        Authorization: "Basic " + btoa("off:off"),
+        "User-Agent": "SmartCartApp/1.0 (maddieglaum@gmail.com)",
+      },
+    });
+
+    const json = await response.json();
+    const filteredProducts: Product[] = json.products.map((p: any) => ({
+      id: p.code,
+      title: p.product_name || "Unknown",
+      brand: p.brands || "No Brand",
+      ingredients: p.ingredients ? getIngredients(p.ingredients) : [],
+      image: p.image_front_url || p.image_url || null,
+      nutriscore: p.nutriscore_grade || null,
+      allergens: p.allergens || [],
+      additives: p.additives || [],
+      traces: getTraces(p.traces_tags) || [],
+      pick: pickCalcuator(getTraces(p.traces_tags) || [], p.allergens || [], p.nutriscore_grade || null),
+    }));
+
+    setProducts(filteredProducts);
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const getIngredients = (ingredients: any[]) => {
     let filteredIngredients: string[] = [];
@@ -119,19 +151,34 @@ const ListScreen = () => {
         filteredTraces.push(trace_tag.slice(3).replace(/-/g, " "));
       }
     });
-    console.log("filteredtraces: " + filteredTraces);
+    // console.log("filteredtraces: " + filteredTraces);
     return filteredTraces;
   };
 
-  
-  const pickCalcuator = (traces: string[]) => {
-    const found = traces.some((trace: string) =>
+  const pickCalcuator = (traces: string[], pallergens: string[], nutriscore?: string) => {
+
+    const foundTraces = traces.some((trace: string) =>
       allergens?.includes(trace.toLowerCase()));
-    if (found) {
-      return "Trace Warning"; 
+
+    const foundAllergens = allergens.some((allergen: string) =>
+      pallergens?.includes(allergen.toLowerCase()));
+
+    if (foundAllergens) {
+      return "Dangerous Pick"
     }
-    return null;  
+    else if (foundTraces) {
+      return "Risky Pick"
+    }
+    else if (nutriscore === "a" || nutriscore === "b" || nutriscore === "c") {
+      return "Excellent Pick"
+    }
+    else {
+      return "Safe Pick"
+    }
   }
+
+
+
   //   const tracesArray = Array.isArray(data.traces) // traces 
   //   ? data.traces
   //   : typeof data.traces === "string"
@@ -140,9 +187,9 @@ const ListScreen = () => {
 
   // const found = tracesArray.some((trace: string) =>
   //   allergenList?.includes(trace.toLowerCase()));
-    // traces 
-    // nutriscore 
-    // on item load compare its traces to allergens 
+  // traces 
+  // nutriscore 
+  // on item load compare its traces to allergens 
 
 
   /// RETURN
@@ -165,8 +212,8 @@ const ListScreen = () => {
       >
         <Ionicons name="search" size={24} color="gray" style={{ marginRight: 8 }} />
         <TextInput
-          value={searchTerms}
-          onChangeText={setSearchTerms}
+          value={searchInput}
+          onChangeText={setSearchInput}
           placeholder="Search Products"
           placeholderTextColor="gray"
           style={{
@@ -176,16 +223,83 @@ const ListScreen = () => {
             fontFamily: "DM-Sans",
             color: "gray",
           }}
-          returnKeyType='search'
+          returnKeyType="search"
           onSubmitEditing={() => {
             setProducts([]);
             setLoading(true);
-            getProducts();
+            setSearchTerms(searchInput); // <— triggers new search term
+            getProducts(searchInput);    // <— pass it directly to API call
           }}
+        />
+
+        <Ionicons
+          name="options"
+          size={28}
+          color="gray"
+          onPress={openModal}
         />
       </View>
 
+      {/* OPTIONS MODAL */}
 
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        onRequestClose={closeModal}
+        transparent={true}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+          }}
+        >
+
+          <View
+            style={{
+              backgroundColor: 'white',
+              borderRadius: 12,
+              padding: 20,
+              width: '80%',
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ fontFamily: 'DM-Sans', fontSize: 18, marginBottom: 16 }}>
+              Filter Options
+            </Text>
+
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                width: '100%',
+              }}
+            >
+              <Text style={{ fontSize: 16, color: 'gray', fontFamily: 'DM-Sans' }}>Include allergens</Text>
+              <Switch
+                trackColor={{ false: '#767577', true: '#5ca3ff' }}
+                ios_backgroundColor="#3e3e3e"
+                value={tempIncludeAllergens}
+                onValueChange={setTempIncludeAllergens}
+              />
+            </View>
+            <Text style={{ fontSize: 12, color: 'gray', fontFamily: 'DM-Sans', marginTop: 12 }}>Show products that contain your allergens in their ingredient lists.</Text>
+            <View style={{ flexDirection: 'row', marginTop: 20, gap: 20 }}>
+              <Button
+                title="Close"
+                color={'gray'}
+                onPress={closeModal} />
+              <Button
+                title="Apply"
+                color={'#5ca3ff'}
+                onPress={applyModalChanges} />
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* SEARCH RESULTS */}
       {!isLoading && searchTerms.trim() !== "" && products.length > 0 && (
@@ -206,7 +320,7 @@ const ListScreen = () => {
             color: "gray",
           }}
         >
-            Products containing your allergens have been filtered out. 
+            {includeAllergens ? "Products containing your allergens are being shown." : "Products containing your allergens have been filtered out."}
           </Text></>
       )}
       {!isLoading && searchTerms.trim() === "" && products.length === 0 && (
@@ -221,6 +335,7 @@ const ListScreen = () => {
           Try searching for a product above.
         </Text>
       )}
+
       {isLoading ? (
         <ActivityIndicator />
       ) : (
@@ -233,57 +348,112 @@ const ListScreen = () => {
             const isLeft = index % 2 === 0; // left column if even index
             const isLastRow = index >= products.length - (products.length % 2 || 2); // last row check
 
+            // Define colors for pick types
+            const pickStyles: Record<string, { color: string; border: string }> = {
+              'Dangerous Pick': { color: '#ff4d4d', border: '#ffcccc' },
+              'Risky Pick': { color: '#ff914d', border: '#ffd6b3' },
+              'Safe Pick': { color: '#5ca3ff', border: '#b3d4ff' },
+              'Excellent Pick': { color: '#00b578', border: '#a3f5ce' },
+            };
+
+            const pickStyle = pickStyles[item.pick || 'Safe Pick'];
+
             return (
               <View
                 style={{
                   width: CARD_WIDTH,
-                  padding: 8,
+                  padding: 12,
                   borderRightWidth: isLeft ? 1 : 0,
                   borderBottomWidth: isLastRow ? 0 : 1,
                   borderColor: '#ddd',
-                  // alignItems: 'center',
                 }}
               >
-                <TouchableOpacity onPress={() =>
-                  router.push({
-                    pathname: "/Details",
-                    params: {
-                      product: encodeURIComponent(JSON.stringify(item)),
-                      allergens: encodeURIComponent(JSON.stringify(allergens)),
-                    },
-                  })
-                }>
-                  {item.pick !== null ? (
-                    <Ionicons name="warning" size={24} color="#ff5757" style={{ 
-                      position: 'absolute',
-                      top: 8,
-                      right: 8,
-                      zIndex: 1,
-                     }} />
-                  ) : null}
-                  {item.image ? (
-                    <Image
-                      source={{ uri: item.image }}
-                      style={{ width: 100, height: 100, borderRadius: 8, marginBottom: 8, justifyContent: 'center', alignItems: 'center' }}
-                      resizeMode="contain"
-                    />
-                  ) : (
-                    <Image
-                      source={require('../../assets/logos/logo3.png')}
-                      style={{ width: 100, height: 100, marginBottom: 8, marginTop: 8, justifyContent: 'center', alignItems: 'center', opacity: 0.5 }}
-                      resizeMode="contain"
-                    />
-                  )}
-                  <View style={{ marginLeft: 4, alignContent: 'flex-start' }}>
+                <TouchableOpacity
+                  onPress={() =>
+                    router.push({
+                      pathname: '/Details',
+                      params: {
+                        product: encodeURIComponent(JSON.stringify(item)),
+                        allergens: encodeURIComponent(JSON.stringify(allergens)),
+                      },
+                    })
+                  }
+                >
+                  {/* Product Image */}
+                  <View style={{ alignItems: 'center', marginBottom: 10 }}>
+                    {item.image ? (
+                      <Image
+                        source={{ uri: item.image }}
+                        style={{
+                          width: 100,
+                          height: 100,
+                          borderRadius: 8,
+                        }}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <Image
+                        source={require('../../assets/logos/logo3.png')}
+                        style={{
+                          width: 100,
+                          height: 100,
+                          opacity: 0.5,
+                        }}
+                        resizeMode="contain"
+                      />
+                    )}
+                  </View>
+
+                  {/* Brand + Title */}
+                  <View style={{ marginLeft: 4 }}>
                     <ProductBrand>{item.brand}</ProductBrand>
                     <ProductHeader>{item.title}</ProductHeader>
-                    <ProductText>{item.pick}</ProductText>
                   </View>
+
+                  {/* Pick Pill */}
+                  {item.pick && (
+                    <View
+                      style={{
+                        marginTop: 8,
+                        alignSelf: 'flex-start',
+                        backgroundColor: 'white',
+                        borderColor: pickStyle.border,
+                        borderWidth: 1.5,
+                        borderRadius: 20,
+                        paddingVertical: 4,
+                        paddingHorizontal: 10,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 5,
+                      }}
+                    >
+                      {item.pick === 'Dangerous Pick' ? (
+                        <Ionicons name="warning" size={15} color={pickStyle.color} />
+                      ) : item.pick === 'Risky Pick' ? (
+                        <Ionicons name="alert-circle-outline" size={15} color={pickStyle.color} />
+                      ) : item.pick === 'Safe Pick' ? (
+                        <Ionicons name="checkmark-circle-outline" size={15} color={pickStyle.color} />
+                      ) : (
+                        <Ionicons name="star" size={15} color={pickStyle.color} />
+                      )}
+                      <Text
+                        style={{
+                          color: pickStyle.color,
+                          fontWeight: '700',
+                          fontSize: 12,
+                          fontFamily: 'DM-Sans-Medium',
+                        }}
+                      >
+                        {item.pick}
+                      </Text>
+                    </View>
+                  )}
                 </TouchableOpacity>
               </View>
             );
           }}
         />
+
 
       )}
 
