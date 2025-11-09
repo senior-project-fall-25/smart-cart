@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { auth,db } from "@/src/FirebaseConfig";
 import { addDoc, getDoc, collection, doc, updateDoc } from 'firebase/firestore';
-import {changeAllergens, getUser } from '../requests'
-import AddAllergens from "../(Profile-Creation)/add-allergens";
+import {changeAllergens, getUser } from '../Database/requests'
+import AddAllergens from "../Profile-Creation/add-allergens";
 import PopUp from "@/components/popUp";
 import { useRouter } from "expo-router";
+import { signOut } from "firebase/auth";
 
 export default function Profile() {
   const [user, setUser] = useState<any>(null);
@@ -64,15 +65,15 @@ export default function Profile() {
       );
   }
 
-  const handleLogout = async() => {
-      
-      try {
-          await auth.signOut();
-          router.replace('../signIn');
-      } catch(error){
-          console.log("Error on signout: ", error)
-      }
-  }
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      // force explicit navigation to sign-in screen
+      router.replace("/Authentication/signIn"); // adjust path if your signIn is at /signIn
+    } catch (err) {
+      console.error("Sign out failed", err);
+    }
+  };
 
   
 

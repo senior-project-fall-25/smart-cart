@@ -25,6 +25,7 @@ type RootStackParamList = {
   // add other routes here if needed
 };
 
+
 const ListScreen = () => {
   const [isLoading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -38,10 +39,12 @@ const ListScreen = () => {
   const [searchInput, setSearchInput] = useState("");
 
 
-
+  // UI Card Dimensions for Products
   const screenWidth = Dimensions.get('window').width;
   const CARD_WIDTH = (screenWidth - 24 * 2) / 2; // 24 padding on each side + 16 margin between cards
 
+
+  // Navigation and Modals
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const router = useRouter();
 
@@ -60,6 +63,7 @@ const ListScreen = () => {
     closeModal();
   };
 
+
   // re-run product search when includeAllergens changes
   useEffect(() => {
     if (searchTerms.trim() !== "") {
@@ -68,6 +72,7 @@ const ListScreen = () => {
   }, [includeAllergens]);
 
 
+  // Fetching products
   const getProducts = async (term = searchTerms) => {
   if (term.trim() === "") return;
 
@@ -134,6 +139,9 @@ const ListScreen = () => {
 };
 
 
+// Helpers
+// Filter and clean ingredients/traces from API.
+// Determines pick recommendation based on allergen presence and nutriscore.
   const getIngredients = (ingredients: any[]) => {
     let filteredIngredients: string[] = [];
     ingredients.forEach((ingredient) => {
@@ -193,6 +201,8 @@ const ListScreen = () => {
 
 
   /// RETURN
+  // A search bar with a TextInput + search icon + options icon.
+  // When user submits a search, getProducts() is called.
   return (
 
     <SafeAreaView style={{ flex: 1, padding: 24, backgroundColor: 'white', gap: 8 }}>

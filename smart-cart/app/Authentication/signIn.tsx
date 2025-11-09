@@ -30,7 +30,7 @@
     setLoading(true);
     try{
       const user  = await signInWithEmailAndPassword(auth, email, password);
-    router.replace('/(tabs)/home');
+    router.replace('/Tabs/home');
     } catch (error: any){
       const err = error as FirebaseError;
       alert('Sign up in Failed: ' + error.message);
@@ -56,7 +56,7 @@
       const cred = GoogleAuthProvider.credential(idToken);
       await signInWithCredential(auth, cred);
       setLoading(false);
-      router.replace('/(tabs)/home');
+      router.replace('/Tabs/home');
     } else if (response?.type === "error") {
       setLoading(false);
       alert("Google sign-in error");
@@ -73,7 +73,7 @@
     >
       <KeyboardAvoidingView behavior="padding">
         <Image 
-        source={require("../assets/logos/logo1.png")}
+        source={require("../../assets/logos/logo1.png")}
         style={{width: "90%",height:60, alignSelf: 'center', marginBottom:50}}
         resizeMode="contain"
         />
@@ -89,7 +89,7 @@
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
-          placeholder="JaneDoe@domain.com"
+          placeholder="Email"
         
         />
         <TextInput
@@ -114,7 +114,7 @@
 
         <View style={styles.linkRow}>
           <Text style={styles.linkText}>Don’t have an account? </Text>
-          <Pressable onPress={() => router.push("/signUp")} accessibilityRole="button" accessibilityLabel="Sign up">
+          <Pressable onPress={() => router.push("/Authentication/signUp")} accessibilityRole="button" accessibilityLabel="Sign up">
           <Text style={styles.linkAction}>Sign up</Text>
           </Pressable>
         </View>
@@ -125,7 +125,7 @@
         </View>
 
         <Pressable style={styles.googleBtn} onPress={onGooglePress} accessibilityRole="button" accessibilityLabel="Sign in with Google">
-          <Image source={require("../assets/logos/SI-Round.png")} style={styles.googleIcon} />
+          <Image source={require("../../assets/logos/SI-Round.png")} style={styles.googleIcon} />
         </Pressable>
         
 

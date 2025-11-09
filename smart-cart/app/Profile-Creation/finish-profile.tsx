@@ -1,10 +1,10 @@
 import { Text, View,Image, ScrollView, StyleSheet, TouchableOpacity} from "react-native";
 import { Link, useRouter, useLocalSearchParams } from "expo-router";
 import { HeaderTitle } from "@react-navigation/elements";
-import { auth,db } from "@/src/FirebaseConfig";
+import { auth, db } from "@/src/FirebaseConfig";
 import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { useEffect } from "react";
-import {changeAllergens} from "../requests";
+import {changeAllergens} from "../Database/requests";
 
 
 export default function FinishProfile() {
@@ -16,17 +16,12 @@ export default function FinishProfile() {
     const finish = (allergens : Array<string>) => {
         // add alergies to user in users table
         changeAllergens(allergens);
-        router.replace('/(tabs)/home')
+        router.replace('/Tabs/home')
     }
 
     
-
     // @ts-expect-error
     const allergens: string[] = params.tagged ? JSON.parse(params.tagged) : []
-
-    const user = {
-        name: 'Maddie'
-    }
 
     function allergenTag(item: string, index: any){
         return ( 
@@ -38,7 +33,9 @@ export default function FinishProfile() {
 
     return (
         <View style={styles.container} >
-            <Text style={styles.header}>Your SmartCart is Ready, {user.name}!</Text>
+            <Text style={styles.header}>
+                Your SmartCart is Ready{currentUser?.displayName ? `, ${currentUser.displayName}!` : "!"}
+                </Text>
             
                 <Text style={[styles.body,{textAlign: 'left', fontWeight: '500', width:'80%' }]}>Allergies:</Text>
                 <ScrollView style={styles.scrollBox} contentContainerStyle={styles.row}>
@@ -48,6 +45,10 @@ export default function FinishProfile() {
                             ))
                         }
                 </ScrollView>
+
+            <Text style={[styles.body, { marginBottom: 30 }]}>
+            You can update your preferences anytime in your Profile Settings.
+            </Text>
  
             <TouchableOpacity
                 onPress={()=> finish(allergens)}
@@ -60,7 +61,6 @@ export default function FinishProfile() {
                 style={styles.logo}
                 resizeMode="contain"
             />
-           
         </View>
     );
 }

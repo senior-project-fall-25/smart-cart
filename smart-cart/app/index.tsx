@@ -3,7 +3,7 @@ import { Redirect } from "expo-router";
 
 export default function Index() { 
     
-    return <Redirect href="/signIn" />; 
+    return <Redirect href="/Authentication/signIn" />; 
 
 // import { Link, useRouter } from "expo-router";
 // import { Text, View, TouchableOpacity } from "react-native";
