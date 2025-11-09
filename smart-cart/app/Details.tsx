@@ -1,8 +1,10 @@
 import { useLocalSearchParams } from "expo-router";
-import { View, Text, Image, ScrollView } from "react-native";
+import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from "expo-router";
 
 export default function ProductDetails({ }: { allergens?: string[] }) {
+  const router = useRouter();
   const { product, allergens } = useLocalSearchParams<{
     product?: string;
     allergens?: string;
@@ -36,6 +38,28 @@ export default function ProductDetails({ }: { allergens?: string[] }) {
   };
 
   const pickStyle = pickStyles[data.pick || 'Safe Pick'];
+
+
+  const styles = StyleSheet.create({
+    addButton: {
+      backgroundColor: "#5CA3FF",
+      paddingVertical: 14,
+      paddingHorizontal: 20,
+      borderRadius: 12,
+      alignItems: "center",
+      marginTop: 20,
+    },
+    addButtonText: {
+      color: "white",
+      fontSize: 16,
+      fontWeight: "600",
+      fontFamily: "DM-Sans",
+    },
+  });
+
+
+  const defaultListId = "abc123";
+
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: "white", padding: 16 }}>
@@ -126,6 +150,17 @@ export default function ProductDetails({ }: { allergens?: string[] }) {
       ) : (
         <Text style={{ marginBottom: 4 }}>No ingredients available.</Text>
       )}
+
+
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => {
+          const encoded = encodeURIComponent(JSON.stringify(data));
+          router.push(`/ChooseList?product=${encoded}`);
+        }}
+      >
+        <Text style={styles.addButtonText}>Add to Shopping List</Text>
+      </TouchableOpacity>
 
     </ScrollView>
   );

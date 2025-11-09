@@ -10,6 +10,7 @@ import { makeRedirectUri } from "expo-auth-session";
 import { FirebaseError } from "firebase/app";
 import { Image } from "react-native";
 import { addDoc, collection, doc, setDoc } from 'firebase/firestore';
+import { updateProfile } from "firebase/auth";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -72,19 +73,30 @@ export default function signUp() {
     
     setLoading(true); //lets spinning whel play while information loads
     
-    try{
-        const user  = await createUserWithEmailAndPassword(auth, email, password);
+      try{
+          const user  = await createUserWithEmailAndPassword(auth, email, password);
+          
+          await createUser();
 
-        createUser();
+          await updateProfile(user.user, {
+              displayName: firstName 
+          });
 
-        router.replace('/introduction');
-    } catch (error: any){
-        const err = error as FirebaseError;
-        alert('Sign up in Failed: ' + error.message);
-    }finally{
-        setLoading(false);
+          router.replace('/Profile-Creation/introduction');
+
+          await auth.currentUser?.reload(); // refresh the user data
+          console.log("Reloaded display name:", auth.currentUser?.displayName);
+      } 
+      catch (error: any){
+          const err = error as FirebaseError;
+          alert('Sign up in Failed: ' + error.message);
+      }
+      finally{
+          setLoading(false);
+      }
     }
-    }
+
+    
     
     //google button press initializer 
     const onGooglePress =  async() => {
@@ -105,7 +117,7 @@ export default function signUp() {
         const cred = GoogleAuthProvider.credential(idToken);
         await signInWithCredential(auth, cred);
         setLoading(false);
-        router.replace('/introduction');
+        router.replace('/Profile-Creation/introduction');
         } else if (response?.type === "error") {
         setLoading(false);
         alert("Google sign-in error");
@@ -122,7 +134,7 @@ export default function signUp() {
     >
       <KeyboardAvoidingView behavior="padding">
         <Image 
-        source={require("../assets/logos/logo2.png")}
+        source={require("../../assets/logos/logo2.png")}
         style={{width: "90%",height:60, alignSelf: 'center', marginBottom:50}}
         resizeMode="contain"
         />
@@ -135,14 +147,14 @@ export default function signUp() {
           style={[styles.input, styles.inputText]}
           value={firstName}
           onChangeText={setFirstName}
-          placeholder="Jane"
+          placeholder="First Name"
         
         />
         <TextInput
           style={[styles.input, styles.inputText]}
           value={lastName}
           onChangeText={setLastName}
-          placeholder="Doe"
+          placeholder="Last Name"
         
         />
         <TextInput
@@ -151,7 +163,7 @@ export default function signUp() {
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
-          placeholder="JaneDoe@domain.com"
+          placeholder="Email"
         
         />
         <TextInput
@@ -183,7 +195,7 @@ export default function signUp() {
 
         <View style={styles.linkRow}>
           <Text style={styles.linkText}>Already have an account? </Text>
-          <Pressable onPress={() => router.push("/signIn")} accessibilityRole="button" accessibilityLabel="Sign up">
+          <Pressable onPress={() => router.push("/Authentication/signIn")} accessibilityRole="button" accessibilityLabel="Sign up">
           <Text style={styles.linkAction}>Sign In</Text>
           </Pressable>
         </View>
@@ -194,7 +206,7 @@ export default function signUp() {
         </View>
 
         <Pressable style={styles.googleBtn}  accessibilityRole="button"  onPress={onGooglePress} accessibilityLabel="Sign in with Google">
-          <Image source={require("../assets/logos/SU-Round.png")} style={styles.googleIcon} />
+          <Image source={require("../../assets/logos/SU-Round.png")} style={styles.googleIcon} />
         </Pressable>
         
 

@@ -16,12 +16,12 @@ export default function TabsLayout() {
 
       // checks if user its the current user if not it signs out
       if (!auth.currentUser) {
-        router.replace("/signIn");
+        router.replace("/Authentication/signIn");
         return;
       }
       // signs out on auth state change
       const sub = onAuthStateChanged(auth, (u) => {
-        if (!u) router.replace("/signIn");
+        if (!u) router.replace("/Authentication/signIn");
       });
       return sub;
   }, []);
