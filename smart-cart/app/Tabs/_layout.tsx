@@ -51,7 +51,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="list"
         options={{ 
-          headerShown: true,
+          headerShown: false,
           headerTitleAlign: "center",
 
           //logo 
