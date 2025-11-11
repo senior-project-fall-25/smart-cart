@@ -2,6 +2,8 @@ import { useLocalSearchParams } from "expo-router";
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useState } from "react";
 
 export default function ProductDetails({ }: { allergens?: string[] }) {
   const router = useRouter();
@@ -10,6 +12,8 @@ export default function ProductDetails({ }: { allergens?: string[] }) {
     allergens?: string;
   }>();
   const data = product ? JSON.parse(decodeURIComponent(product as string)) : null;
+  const [imgUri, setImgUri] = useState(data?.image || null);
+  const [hasError, setHasError] = useState(false);
   const allergenList = allergens ? JSON.parse(decodeURIComponent(allergens as string)) : [];
 
   if (!data) {
@@ -19,6 +23,7 @@ export default function ProductDetails({ }: { allergens?: string[] }) {
       </View>
     );
   }
+  console.log("data image: ", data.image);
 
   const tracesArray = Array.isArray(data.traces)
     ? data.traces
@@ -39,15 +44,17 @@ export default function ProductDetails({ }: { allergens?: string[] }) {
 
   const pickStyle = pickStyles[data.pick || 'Safe Pick'];
 
-
   const styles = StyleSheet.create({
     addButton: {
       backgroundColor: "#5CA3FF",
       paddingVertical: 14,
-      paddingHorizontal: 20,
       borderRadius: 12,
       alignItems: "center",
-      marginTop: 20,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+      elevation: 4,
     },
     addButtonText: {
       color: "white",
@@ -55,113 +62,192 @@ export default function ProductDetails({ }: { allergens?: string[] }) {
       fontWeight: "600",
       fontFamily: "DM-Sans",
     },
+    pill: {
+      borderRadius: 20,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      marginRight: 8,
+      marginBottom: 8,
+      alignSelf: "flex-start",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
   });
 
+  // 🟢 Reason pills depending on pick type
+  const getReasonPills = () => {
+    if (data.nutriscore && data.nutriscore.length > 1) {
+      data.nutriscore = "Unknown";
+    }
+    else {
+      data.nutriscore = data.nutriscore.toUpperCase();
+    }
+    switch (data.pick) {
+      case "Excellent Pick":
+        return [
+          { text: "Allergen free" },
+          { text: "No traces of allergens" },
+          { text: `NutriScore: ${data.nutriscore}` },
+        ];
+      case "Safe Pick":
+        return [
+          { text: "Allergen free" },
+          { text: "No traces of allergens" },
+          { text: `NutriScore: ${data.nutriscore}` },
+        ];
+      case "Risky Pick":
+        return [
+          { text: "Allergen free" },
+          { text: "May contain traces" },
+          { text: `NutriScore: ${data.nutriscore}` },
+        ];
+      case "Dangerous Pick":
+        return [
+          { text: "Contains allergens" },
+          // { text: "High allergen risk" },
+          { text: `NutriScore: ${data.nutriscore}` },
+        ];
+      default:
+        return [];
+    }
+  };
 
-  const defaultListId = "abc123";
-
+  const reasonPills = getReasonPills();
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: "white", padding: 16 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+      <View style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={{
+            padding: 16,
+            paddingBottom: 140,
+          }}
+          showsVerticalScrollIndicator={true}
+        >
+          {/* Product Image */}
+          <Image
+            source={imgUri && !hasError ? { uri: imgUri } : require('../assets/logos/logo3.png')}
+            style={{
+              width: "100%",
+              height: 250,
+              borderRadius: 12,
+              marginBottom: 16,
+              opacity: hasError ? 0.5 : 1, // 50% if fallback
+            }}
+            resizeMode="contain"
+            onError={() => setHasError(true)}
+          />
 
-      {/* Product Image */}
-      {data.image ? (
-        <Image
-          source={{ uri: data.image }}
-          style={{ width: "100%", height: 250, borderRadius: 12, marginBottom: 16 }}
-          resizeMode="contain"
-        />
-      ) : (
-        <Image
-          source={require('../assets/logos/logo3.png')}
-          style={{ width: "100%", height: 250, borderRadius: 12, marginBottom: 16, opacity: 0.5 }}
-          resizeMode="contain"
-        />
-      )}
+          {/* Brand + Title */}
+          <Text style={{ fontFamily: "DM-Sans", fontSize: 16, color: "gray", textTransform: "capitalize", marginBottom: 4 }}>
+            {data.brand}
+          </Text>
+          <Text style={{ fontFamily: "DM-Sans-Medium", fontSize: 22, fontWeight: "bold", textTransform: "capitalize" }}>
+            {data.title}
+          </Text>
 
-      {/* Brand + Title */}
-      <Text style={{ fontFamily: "DM-Sans", fontSize: 16, color: "gray", textTransform: "capitalize", marginBottom: 4 }}>
-        {data.brand}
-      </Text>
-      <Text style={{ fontFamily: "DM-Sans-Medium", fontSize: 22, fontWeight: "bold", textTransform: "capitalize" }}>
-        {data.title}
-      </Text>
+          {/* Pick Pill */}
+          {data.pick && (
+            <View
+              style={{
+                marginTop: 12,
+                alignSelf: 'flex-start',
+                backgroundColor: 'white',
+                borderColor: pickStyle.border,
+                borderWidth: 1.5,
+                borderRadius: 20,
+                paddingVertical: 6,
+                paddingHorizontal: 12,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              {data.pick === 'Dangerous Pick' ? (
+                <Ionicons name="warning" size={18} color={pickStyle.color} />
+              ) : data.pick === 'Risky Pick' ? (
+                <Ionicons name="alert-circle-outline" size={18} color={pickStyle.color} />
+              ) : data.pick === 'Safe Pick' ? (
+                <Ionicons name="checkmark-circle-outline" size={18} color={pickStyle.color} />
+              ) : (
+                <Ionicons name="star" size={18} color={pickStyle.color} />
+              )}
+              <Text style={{ color: pickStyle.color, fontWeight: '700', fontSize: 14, fontFamily: 'DM-Sans-Medium' }}>
+                {data.pick}
+              </Text>
+            </View>
+          )}
 
-      {/* Pick Pill */}
-      {data.pick && (
+          {/* Logo separator */}
+          <View style={{ borderBottomWidth: 1, borderBottomColor: "#eee", marginVertical: 24, position: "relative" }}>
+            <Image
+              source={require('../assets/logos/logo2.png')}
+              style={{ width: "100%", height: 30, position: 'absolute', top: -15 }}
+              resizeMode="contain"
+            />
+          </View>
+
+          {/* 🟣 Pick Description Pills */}
+          {reasonPills.length > 0 && (
+            <View style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              justifyContent: "center", // centers the pills horizontally
+              marginBottom: 10,
+              marginTop: 10,
+            }}>
+              {reasonPills.map((pill, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.pill,
+                    { borderWidth: 1.5, borderColor: pickStyle.border, backgroundColor: "white" },
+                  ]}
+                >
+                  <Ionicons name="leaf-outline" size={16} color={pickStyle.color} />
+                  <Text style={{ color: pickStyle.color, fontFamily: "DM-Sans-Medium", fontSize: 14 }}>
+                    {pill.text}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+
+          {/* Ingredients */}
+          <Text style={{ fontFamily: "DM-Sans", fontSize: 18, fontWeight: "bold", marginBottom: 8 }}>
+            Ingredients
+          </Text>
+          {data.ingredients?.length ? (
+            data.ingredients.map((ing: string, index: number) => (
+              <Text key={index} style={{ marginBottom: 4, fontFamily: "DM-Sans" }}>• {ing}</Text>
+            ))
+          ) : (
+            <Text style={{ marginBottom: 4 }}>No ingredients available.</Text>
+          )}
+        </ScrollView>
+
+        {/* Fixed Bottom Button */}
         <View
           style={{
-            marginTop: 12,
-            alignSelf: 'flex-start',
-            backgroundColor: 'white',
-            borderColor: pickStyle.border,
-            borderWidth: 1.5,
-            borderRadius: 20,
-            paddingVertical: 6,
-            paddingHorizontal: 12,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
+            position: "absolute",
+            bottom: 20,
+            left: 16,
+            right: 16,
           }}
         >
-          {data.pick === 'Dangerous Pick' ? (
-            <Ionicons name="warning" size={18} color={pickStyle.color} />
-          ) : data.pick === 'Risky Pick' ? (
-            <Ionicons name="alert-circle-outline" size={18} color={pickStyle.color} />
-          ) : data.pick === 'Safe Pick' ? (
-            <Ionicons name="checkmark-circle-outline" size={18} color={pickStyle.color} />
-          ) : (
-            <Ionicons name="star" size={18} color={pickStyle.color} />
-          )}
-          <Text style={{ color: pickStyle.color, fontWeight: '700', fontSize: 14, fontFamily: 'DM-Sans-Medium' }}>
-            {data.pick}
-          </Text>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => {
+              const encoded = encodeURIComponent(JSON.stringify(data));
+              router.push(`/ChooseList?product=${encoded}`);
+            }}
+          >
+            <Text style={styles.addButtonText}>Add to Shopping List</Text>
+          </TouchableOpacity>
         </View>
-      )}
-
-      {/* Logo separator */}
-      <View style={{ borderBottomWidth: 1, borderBottomColor: "#eee", marginVertical: 24, position: "relative" }}>
-        <Image
-          source={require('../assets/logos/logo2.png')}
-          style={{ width: "100%", height: 30, position: 'absolute', top: -15 }}
-          resizeMode="contain"
-        />
       </View>
-
-      {/* Allergen Warning */}
-      <Text style={{
-        fontFamily: "DM-Sans",
-        fontSize: 16,
-        marginBottom: 12,
-        color: found ? 'red' : 'green',
-        fontWeight: '600',
-      }}>
-        {found ? '⚠ Warning: May contain traces of allergens!' : 'No allergens detected.'}
-      </Text>
-
-      {/* Ingredients */}
-      <Text style={{ fontFamily: "DM-Sans", fontSize: 18, fontWeight: "bold", marginBottom: 8 }}>
-        Ingredients
-      </Text>
-      {data.ingredients?.length ? (
-        data.ingredients.map((ing: string, index: number) => (
-          <Text key={index} style={{ marginBottom: 4 }}>• {ing}</Text>
-        ))
-      ) : (
-        <Text style={{ marginBottom: 4 }}>No ingredients available.</Text>
-      )}
-
-
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => {
-          const encoded = encodeURIComponent(JSON.stringify(data));
-          router.push(`/ChooseList?product=${encoded}`);
-        }}
-      >
-        <Text style={styles.addButtonText}>Add to Shopping List</Text>
-      </TouchableOpacity>
-
-    </ScrollView>
+    </SafeAreaView>
   );
 }
