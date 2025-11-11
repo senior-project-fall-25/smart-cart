@@ -42,7 +42,7 @@ export default function ProductDetails({ }: { allergens?: string[] }) {
     'Excellent Pick': { color: '#00b578', border: '#a3f5ce' },
   };
 
-  const pickStyle = pickStyles[data.pick || 'Safe Pick'];
+  const pickStyle = pickStyles[data.pick || 'Risky Pick'];
 
   const styles = StyleSheet.create({
     addButton: {
@@ -75,38 +75,37 @@ export default function ProductDetails({ }: { allergens?: string[] }) {
     },
   });
 
-  // 🟢 Reason pills depending on pick type
   const getReasonPills = () => {
-    if (data.nutriscore && data.nutriscore.length > 1) {
-      data.nutriscore = "Unknown";
-    }
-    else {
-      data.nutriscore = data.nutriscore.toUpperCase();
+    if (data.nutriscore?.length > 1) {
+      data.nutriscore = null;
     }
     switch (data.pick) {
       case "Excellent Pick":
         return [
-          { text: "Allergen free" },
-          { text: "No traces of allergens" },
-          { text: `NutriScore: ${data.nutriscore}` },
+          { icon: "checkmark-circle-outline", text: "No allergens in ingredients" },
+          { icon: "shield-checkmark-outline", text: "No traces of allergens in the facility" },
+          { icon: "leaf-outline", text: `NutriScore ${data.nutriscore?.toUpperCase() || "Unknown"} - healthier choice` },
         ];
       case "Safe Pick":
+        const nutriText = data.nutriscore
+          ? `${data.nutriscore.toUpperCase()} - less healthy choice`
+          : "Unknown";
+
         return [
-          { text: "Allergen free" },
-          { text: "No traces of allergens" },
-          { text: `NutriScore: ${data.nutriscore}` },
+          { icon: "checkmark-circle-outline", text: "No allergens in ingredients" },
+          { icon: "shield-checkmark-outline", text: "No traces of allergens in the facility" },
+          { icon: "leaf-outline", text: `NutriScore ${nutriText}` },
         ];
       case "Risky Pick":
         return [
-          { text: "Allergen free" },
-          { text: "May contain traces" },
-          { text: `NutriScore: ${data.nutriscore}` },
+          { icon: "checkmark-circle-outline", text: "No allergens in ingredients" },
+          { icon: "alert-circle-outline", text: "May contain traces of allergens from facility" },
+          { icon: "leaf-outline", text: `NutriScore ${data.nutriscore?.toUpperCase() || "Unknown"}` },
         ];
       case "Dangerous Pick":
         return [
-          { text: "Contains allergens" },
-          // { text: "High allergen risk" },
-          { text: `NutriScore: ${data.nutriscore}` },
+          { icon: "warning-outline", text: "Contains allergens in ingredients" },
+          { icon: "leaf-outline", text: `NutriScore ${data.nutriscore?.toUpperCase() || "Unknown"}` },
         ];
       default:
         return [];
@@ -188,24 +187,30 @@ export default function ProductDetails({ }: { allergens?: string[] }) {
             />
           </View>
 
-          {/* 🟣 Pick Description Pills */}
           {reasonPills.length > 0 && (
             <View style={{
               flexDirection: "row",
               flexWrap: "wrap",
-              justifyContent: "center", // centers the pills horizontally
-              marginBottom: 10,
-              marginTop: 10,
+              justifyContent: "center",
+              marginVertical: 12,
+              gap: 6,
             }}>
               {reasonPills.map((pill, index) => (
                 <View
                   key={index}
-                  style={[
-                    styles.pill,
-                    { borderWidth: 1.5, borderColor: pickStyle.border, backgroundColor: "white" },
-                  ]}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                    borderWidth: 1.5,
+                    borderColor: pickStyle.border,
+                    borderRadius: 20,
+                    paddingVertical: 6,
+                    paddingHorizontal: 12,
+                    backgroundColor: "white",
+                  }}
                 >
-                  <Ionicons name="leaf-outline" size={16} color={pickStyle.color} />
+                  <Ionicons name={pill.icon as any} size={16} color={pickStyle.color} />
                   <Text style={{ color: pickStyle.color, fontFamily: "DM-Sans-Medium", fontSize: 14 }}>
                     {pill.text}
                   </Text>
@@ -213,6 +218,7 @@ export default function ProductDetails({ }: { allergens?: string[] }) {
               ))}
             </View>
           )}
+
 
 
           {/* Ingredients */}
