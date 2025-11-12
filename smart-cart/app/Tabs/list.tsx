@@ -7,6 +7,7 @@ import { ProductText, ProductHeader, ProductBrand } from '@/app/SmartCartStyles'
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Dimensions, Switch } from 'react-native';
+import { getUser } from '../Database/requests';
 
 type Product = {
   id: string;
@@ -22,7 +23,23 @@ type Product = {
 };
 type RootStackParamList = {
   Details: { product: Product };
-  // add other routes here if needed
+};
+
+const ProductImage: React.FC<{ uri?: string | null; style?: object }> = ({ uri, style }) => {
+  const [hasError, setHasError] = useState(false);
+
+  return (
+    <Image
+      source={uri && !hasError ? { uri } : require('../../assets/logos/logo3.png')}
+      style={{
+        ...style,
+        borderRadius: uri && !hasError ? 8 : 0,
+        opacity: uri && !hasError ? 1 : 0.5,
+      }}
+      resizeMode="contain"
+      onError={() => setHasError(true)}
+    />
+  );
 };
 
 const ListScreen = () => {
@@ -30,28 +47,40 @@ const ListScreen = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerms, setSearchTerms] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
-  // const [additives, setAdditives] = useState<string[]>(["E150d", "E104"]);
-  const [allergens, setAllergens] = useState<string[]>(["peanuts", "milk"]);
+  const [allergens, setAllergens] = useState<string[]>([]);
   const [includeAllergens, setIncludeAllergens] = useState(false);
   const [tempIncludeAllergens, setTempIncludeAllergens] = useState(false);
   const toggleIncludeAllergens = () => setIncludeAllergens(previousState => !previousState);
   const [searchInput, setSearchInput] = useState("");
+  const [user, setUser] = useState(null);
 
-
-
+  // UI Card Dimensions for Products
   const screenWidth = Dimensions.get('window').width;
   const CARD_WIDTH = (screenWidth - 24 * 2) / 2; // 24 padding on each side + 16 margin between cards
 
+
+  // Navigation and Modals
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      await getUser(setLoading, setUser, setAllergens);
+    };
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      console.log("User loaded:", user);
+    }
+  }, [user, allergens]);
 
   const openModal = () => {
     setTempIncludeAllergens(includeAllergens)
     setModalVisible(true);
   }
   const closeModal = () => setModalVisible(false);
-
-  // const navigation = useNavigation();
 
   const applyModalChanges = () => {
     if (tempIncludeAllergens !== includeAllergens) {
@@ -60,79 +89,86 @@ const ListScreen = () => {
     closeModal();
   };
 
-  // re-run product search when includeAllergens changes
   useEffect(() => {
     if (searchTerms.trim() !== "") {
       getProducts();
     }
   }, [includeAllergens]);
 
-
   const getProducts = async (term = searchTerms) => {
-  if (term.trim() === "") return;
+    if (term.trim() === "") return;
+    try {
+      await getUser(setLoading, setUser, setAllergens);
+      setLoading(true);
+      setProducts([]);
 
-  try {
-    setLoading(true);
-    setProducts([]);
+      const page_size = 26;
+      const baseUrl = "https://us.openfoodfacts.net/cgi/search.pl";
+      const params = [
+        `search_terms=${encodeURIComponent(term)}`,
+        "search_simple=1",
+        "action=process",
+        "json=1",
+        "nocache=1",
+        `page_size=${page_size}`,
+        "sort_by=popularity_key",
+      ];
 
-    const page_size = 26;
-    const baseUrl = "https://us.openfoodfacts.net/cgi/search.pl";
-    const params = [
-      `search_terms=${encodeURIComponent(term)}`,
-      "search_simple=1",
-      "action=process",
-      "json=1",
-      "nocache=1",
-      `page_size=${page_size}`,
-      "sort_by=popularity_key",
-    ];
+      let index = 0;
+      if (!includeAllergens) {
+        allergens.forEach((a) => {
+          params.push(`tagtype_${index}=allergens`);
+          params.push(`tag_contains_${index}=does_not_contain`);
+          params.push(`tag_${index}=${encodeURIComponent(a.toLowerCase())}`);
+          index++;
+        });
+      }
 
-    let index = 0;
-    if (!includeAllergens) {
-      allergens.forEach((a) => {
-        params.push(`tagtype_${index}=allergens`);
-        params.push(`tag_contains_${index}=does_not_contain`);
-        params.push(`tag_${index}=${encodeURIComponent(a)}`);
-        index++;
+      params.push(`tagtype_${index}=countries`);
+      params.push(`tag_contains_${index}=contains`);
+      params.push(`tag_${index}=United%20States`);
+
+      const url = `${baseUrl}?${params.join("&")}`;
+      const proxy = "https://corsproxy.io/?";
+
+      const response = await fetch(proxy + url, {
+        headers: {
+          Authorization: "Basic " + btoa("off:off"),
+          "User-Agent": "SmartCartApp/1.0 (maddieglaum@gmail.com)",
+        },
+
       });
+      console.log("params: " + params.join("&"));
+
+      const json = await response.json();
+      const filteredProducts: Product[] = json.products
+        .filter((p: any) => Array.isArray(p.ingredients) && p.ingredients.length > 0)
+        .map((p: any) => ({
+          id: p.code,
+          title: p.product_name || "Unknown",
+          brand: p.brands || "No Brand",
+          ingredients: p.ingredients ? getIngredients(p.ingredients) : [],
+          image: p.image_front_url || p.image_url || null,
+          nutriscore: p.nutriscore_grade || null,
+          allergens: p.allergens || [],
+          additives: p.additives || [],
+          traces: getTraces(p.traces_tags) || [],
+          pick: pickCalcuator(
+            getTraces(p.traces_tags) || [],
+            p.allergens_tags || [], 
+            p.nutriscore_grade || null,
+            p.ingredients ? getIngredients(p.ingredients) : []
+          ),
+
+        }));
+
+      setProducts(filteredProducts);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
-
-    params.push(`tagtype_${index}=countries`);
-    params.push(`tag_contains_${index}=contains`);
-    params.push(`tag_${index}=United%20States`);
-
-    const url = `${baseUrl}?${params.join("&")}`;
-    const proxy = "https://corsproxy.io/?";
-
-    const response = await fetch(proxy + url, {
-      headers: {
-        Authorization: "Basic " + btoa("off:off"),
-        "User-Agent": "SmartCartApp/1.0 (maddieglaum@gmail.com)",
-      },
-    });
-
-    const json = await response.json();
-    const filteredProducts: Product[] = json.products.map((p: any) => ({
-      id: p.code,
-      title: p.product_name || "Unknown",
-      brand: p.brands || "No Brand",
-      ingredients: p.ingredients ? getIngredients(p.ingredients) : [],
-      image: p.image_front_url || p.image_url || null,
-      nutriscore: p.nutriscore_grade || null,
-      allergens: p.allergens || [],
-      additives: p.additives || [],
-      traces: getTraces(p.traces_tags) || [],
-      pick: pickCalcuator(getTraces(p.traces_tags) || [], p.allergens || [], p.nutriscore_grade || null),
-    }));
-
-    setProducts(filteredProducts);
-  } catch (error) {
-    console.error(error);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   const getIngredients = (ingredients: any[]) => {
     let filteredIngredients: string[] = [];
@@ -155,46 +191,44 @@ const ListScreen = () => {
     return filteredTraces;
   };
 
-  const pickCalcuator = (traces: string[], pallergens: string[], nutriscore?: string) => {
+  const pickCalcuator = (
+    traces: string[],
+    pallergens: string[],
+    nutriscore?: string,
+    ingredients?: string[]
+  ) => {
+    const normalizedAllergens = allergens.map(a => a.toLowerCase());
+    const normalizedTraces = traces.map(t => t.toLowerCase());
+    const normalizedPAllergens = pallergens.map(a => a.toLowerCase());
+    const normalizedIngredients = ingredients?.map(i => i.toLowerCase()) || [];
 
-    const foundTraces = traces.some((trace: string) =>
-      allergens?.includes(trace.toLowerCase()));
+    // look for any user allergen in product traces, allergens, or ingredients
+    const foundTraces = normalizedTraces.some(trace =>
+      normalizedAllergens.includes(trace)
+    );
+    const foundAllergens = normalizedPAllergens.some(a =>
+      normalizedAllergens.includes(a)
+    );
+    const foundIngredients = normalizedIngredients.some(i =>
+      normalizedAllergens.some(a => i.includes(a))
+    );
 
-    const foundAllergens = allergens.some((allergen: string) =>
-      pallergens?.includes(allergen.toLowerCase()));
-
-    if (foundAllergens) {
-      return "Dangerous Pick"
+    if (foundAllergens || foundIngredients) {
+      return "Dangerous Pick";
+    } else if (foundTraces) {
+      return "Risky Pick";
+    } else if (nutriscore === "a" || nutriscore === "b" || nutriscore === "c") {
+      return "Excellent Pick";
+    } else {
+      return "Safe Pick";
     }
-    else if (foundTraces) {
-      return "Risky Pick"
-    }
-    else if (nutriscore === "a" || nutriscore === "b" || nutriscore === "c") {
-      return "Excellent Pick"
-    }
-    else {
-      return "Safe Pick"
-    }
-  }
+  };
 
-
-
-  //   const tracesArray = Array.isArray(data.traces) // traces 
-  //   ? data.traces
-  //   : typeof data.traces === "string"
-  //     ? data.traces.split(",").map((t: string) => t.trim().toLowerCase())
-  //     : [];
-
-  // const found = tracesArray.some((trace: string) =>
-  //   allergenList?.includes(trace.toLowerCase()));
   // traces 
   // nutriscore 
   // on item load compare its traces to allergens 
 
-
-  /// RETURN
   return (
-
     <SafeAreaView style={{ flex: 1, padding: 24, backgroundColor: 'white', gap: 8 }}>
 
       {/* SEARCH BAR */}
@@ -227,8 +261,8 @@ const ListScreen = () => {
           onSubmitEditing={() => {
             setProducts([]);
             setLoading(true);
-            setSearchTerms(searchInput); // <— triggers new search term
-            getProducts(searchInput);    // <— pass it directly to API call
+            setSearchTerms(searchInput); // triggers new search term
+            getProducts(searchInput);    // pass it directly to API call
           }}
         />
 
@@ -345,10 +379,10 @@ const ListScreen = () => {
           numColumns={2}
           columnWrapperStyle={{ justifyContent: 'flex-start' }}
           renderItem={({ item, index }) => {
+            
             const isLeft = index % 2 === 0; // left column if even index
             const isLastRow = index >= products.length - (products.length % 2 || 2); // last row check
-
-            // Define colors for pick types
+            
             const pickStyles: Record<string, { color: string; border: string }> = {
               'Dangerous Pick': { color: '#ff4d4d', border: '#ffcccc' },
               'Risky Pick': { color: '#ff914d', border: '#ffd6b3' },
@@ -381,27 +415,7 @@ const ListScreen = () => {
                 >
                   {/* Product Image */}
                   <View style={{ alignItems: 'center', marginBottom: 10 }}>
-                    {item.image ? (
-                      <Image
-                        source={{ uri: item.image }}
-                        style={{
-                          width: 100,
-                          height: 100,
-                          borderRadius: 8,
-                        }}
-                        resizeMode="contain"
-                      />
-                    ) : (
-                      <Image
-                        source={require('../../assets/logos/logo3.png')}
-                        style={{
-                          width: 100,
-                          height: 100,
-                          opacity: 0.5,
-                        }}
-                        resizeMode="contain"
-                      />
-                    )}
+                    <ProductImage uri={item.image} style={{ width: 100, height: 100 }} />
                   </View>
 
                   {/* Brand + Title */}
