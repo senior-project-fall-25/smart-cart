@@ -136,7 +136,7 @@ export default function Home() {
         )}
         ListEmptyComponent={
           <View style={styles.emptyBox}>
-            <Text style={styles.emptyText}>No lists yet. Create your first one!</Text>
+            <Text style={styles.emptyText}>No lists yet. Let's start shopping!</Text>
           </View>
         }
       />
