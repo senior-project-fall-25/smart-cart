@@ -32,7 +32,6 @@ export const createUser = async () => {
 };
 
 export const getUser = async(setLoading, setUser, setAllergies) => {
-    // this doesnt work yet!!
     setLoading(true)
     var data = null;
     const userID = auth.currentUser?.uid;
