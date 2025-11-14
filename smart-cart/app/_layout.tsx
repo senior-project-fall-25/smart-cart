@@ -91,6 +91,18 @@ export default function RootLayout() {
             title: "Product Details",
             headerShown: true,
             headerBackTitle: "Back",
+            headerTitleStyle: { fontFamily: 'DM-Sans-Medium', fontSize: 18 },
+            headerBackTitleStyle: { fontFamily: 'DM-Sans-Medium' },
+          }}
+        />
+        <Stack.Screen
+          name="ChooseList"
+          options={{
+            title: "",
+            headerShown: true,
+            headerBackTitle: "Back",
+            headerTitleStyle: { fontFamily: 'DM-Sans-Medium', fontSize: 18 },
+            headerBackTitleStyle: { fontFamily: 'DM-Sans-Medium' },
           }}
         />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
