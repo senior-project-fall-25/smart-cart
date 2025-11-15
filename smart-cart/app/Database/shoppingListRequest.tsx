@@ -1,12 +1,18 @@
 import { auth, db } from "@/src/FirebaseConfig";
-import { collection, addDoc, Timestamp, doc, updateDoc, arrayUnion, getDocs } from "firebase/firestore";
+import { collection, addDoc, setDoc, Timestamp, doc, updateDoc, arrayUnion, getDocs } from "firebase/firestore";
 
-// Type for ShoppingList (optional)
 export type ShoppingList = {
   id: string;
   name: string;
   createdAt: Date;
   productIDs?: string[];
+};
+
+export type ProductInfo = {
+  id: string;
+  title: string;
+  brand: string;
+  image?: string | null;
 };
 
 // Create a new shopping list
@@ -63,5 +69,24 @@ export const addItemToShoppingList = async (product: any, listId: string) => {
     console.log(`Product ${product.title} added to list ${listId}`);
   } catch (err) {
     console.error("Error adding product to shopping list:", err);
+  }
+};
+
+
+export const saveProductToDB = async (product: any) => {
+  if (!product?.id) throw new Error("Product must have an ID");
+
+  const productRef = doc(db, "products", product.id);
+
+  try {
+    await setDoc(productRef, {
+      title: product.title,
+      brand: product.brand,
+      image: product.image || null,
+    }, { merge: true }); // merge keeps existing fields
+    console.log("Product saved to DB:", product.title);
+  } catch (err) {
+    console.error("Error saving product to DB:", err);
+    throw err;
   }
 };
