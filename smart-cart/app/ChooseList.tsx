@@ -15,10 +15,12 @@ import {
   fetchUserShoppingLists,
   addShoppingList,
   addItemToShoppingList,
+  saveProductToDB
 } from "../app/Database/shoppingListRequest";
 import { useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+
 
 type ShoppingList = {
   id: string;
@@ -53,7 +55,6 @@ export default function ChooseList({ onDone }: Props) {
   const router = useRouter();
 
   console.log("Decoded product:", product);
-
 
   useEffect(() => {
     loadLists();
@@ -100,9 +101,12 @@ export default function ChooseList({ onDone }: Props) {
       return;
     }
     try {
+      await saveProductToDB(product);
+      
       for (const id of selectedLists) {
         await addItemToShoppingList(product, id);
       }
+      
       Alert.alert("Success", "Item added to selected list(s).");
       onDone?.();
       router.back(); 
