@@ -82,6 +82,16 @@ export default function RootLayout() {
 
 
         <Stack.Screen name="home" />
+        <Stack.Screen
+          name="shopListDetails"
+          options={{
+            title: "",
+            headerShown: true,
+            headerBackTitle: "Back",
+            headerTitleStyle: { fontFamily: 'DM-Sans-Medium', fontSize: 18 },
+            headerBackTitleStyle: { fontFamily: 'DM-Sans-Medium' },
+          }}
+        />
         <Stack.Screen name="index" options={{ title: '' }} />
         <Stack.Screen name="Profile-Creation" options={{ headerShown: false }} />
         <Stack.Screen name="Tabs" options={{ headerShown: false }} />
