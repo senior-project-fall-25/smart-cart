@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, FlatList, Image, ScrollView } from "react-native";
+import { View, Text, StyleSheet, FlatList, Image, ScrollView, TouchableOpacity } from "react-native";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/src/FirebaseConfig";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { subscribeProductsByIds } from "../Database/products";
+import { useRouter } from "expo-router";
+
 
 // thumbnail that goes back to the logo if image fails
 function Thumb({ uri }: { uri?: string }) {
@@ -20,6 +22,8 @@ function Thumb({ uri }: { uri?: string }) {
 }
 
 export default function Home() {
+  const router = useRouter();
+  
   const [ready, setReady] = useState<boolean>(false);
   const [lists, setLists] = useState<any[]>([]);
   
@@ -103,7 +107,39 @@ export default function Home() {
     };
   }, [lists]);
 
-  // Renders all lists 
+
+  // Render each shopping list card
+  const renderListCard = ({ item }: { item: any }) => {
+    return (
+      <TouchableOpacity
+        onPress={() =>
+          router.push(
+            `/shopListDetails?listId=${item.id}&listName=${encodeURIComponent(item.name)}`
+          )
+        }
+      >
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text numberOfLines={1} style={styles.cardTitle}>
+              {item.name}
+            </Text>
+            <Text style={styles.cardCount}>
+              {item.productIDs.length} {item.productIDs.length === 1 ? "item" : "items"}
+            </Text>
+          </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {(item.productIDs || []).map((pid: string, idx: number) => {
+              const p = productMap[pid];
+              const uri = p?.image || undefined;
+              return <Thumb key={`${pid}-${idx}`} uri={uri} />;
+            })}
+          </ScrollView>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>Shopping Lists</Text>
@@ -113,27 +149,7 @@ export default function Home() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         ItemSeparatorComponent={() => <View style={styles.sep} />}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text numberOfLines={1} style={styles.cardTitle}>
-                {item.name}
-              </Text>
-              <Text style={styles.cardCount}>
-                {item.productIDs.length}{" "}
-                {item.productIDs.length === 1 ? "item" : "items"}
-              </Text>
-            </View>
-
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {(item.productIDs || []).map((pid: string, idx: number) => {
-                const p = productMap[pid];
-                const uri = p?.image || undefined;
-                return <Thumb key={`${pid}-${idx}`} uri={uri} />;
-              })}
-            </ScrollView>
-          </View>
-        )}
+        renderItem={renderListCard}
         ListEmptyComponent={
           <View style={styles.emptyBox}>
             <Text style={styles.emptyText}>No lists yet. Let's start shopping!</Text>

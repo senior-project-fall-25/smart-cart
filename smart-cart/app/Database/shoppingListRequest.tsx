@@ -1,5 +1,5 @@
 import { auth, db } from "@/src/FirebaseConfig";
-import { collection, addDoc, setDoc, Timestamp, doc, updateDoc, arrayUnion, getDocs } from "firebase/firestore";
+import { collection, getDoc, addDoc, setDoc, Timestamp, doc, updateDoc, arrayUnion, getDocs, arrayRemove } from "firebase/firestore";
 
 export type ShoppingList = {
   id: string;
@@ -72,7 +72,6 @@ export const addItemToShoppingList = async (product: any, listId: string) => {
   }
 };
 
-
 export const saveProductToDB = async (product: any) => {
   if (!product?.id) throw new Error("Product must have an ID");
 
@@ -87,6 +86,67 @@ export const saveProductToDB = async (product: any) => {
     console.log("Product saved to DB:", product.title);
   } catch (err) {
     console.error("Error saving product to DB:", err);
+    throw err;
+  }
+};
+
+export async function fetchProductsForList(listId: string): Promise<ProductInfo[]> {
+  try {
+    // Get the shopping list document
+    const listRef = doc(db, "users", auth.currentUser!.uid, "shoppingLists", listId);
+    const listSnap = await getDoc(listRef);
+
+    if (!listSnap.exists()) return [];
+
+    const data = listSnap.data();
+    const productIDs: string[] = Array.isArray(data?.productIDs) ? data.productIDs : [];
+
+    if (productIDs.length === 0) return [];
+
+    // Fetch all products
+    const productsWithNulls = await Promise.all(
+      productIDs.map(async (pid) => {
+        const prodRef = doc(db, "products", pid);
+        const prodSnap = await getDoc(prodRef);
+
+        if (!prodSnap.exists()) return null;
+
+        const pData = prodSnap.data();
+        return {
+          id: prodSnap.id,
+          title: pData?.title || "Untitled Product",
+          brand: pData?.brand || "Unknown Brand",
+          image: pData?.image || null,
+        } as ProductInfo;
+      })
+    );
+
+    // Filter out nulls and return only valid products
+    const products: ProductInfo[] = productsWithNulls.filter(
+      (p): p is ProductInfo => p !== null
+    );
+
+    return products;
+  } catch (err) {
+    console.error("fetchProductsForList error:", err);
+    return [];
+  }
+}
+
+// Remove one or more productIDs from a shopping list
+export const removeItemsFromList = async (listId: string, productIds: string[]) => {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Not authenticated");
+  if (!listId) throw new Error("Missing list id");
+  if (!productIds || productIds.length === 0) return;
+
+  const listDocRef = doc(db, "users", user.uid, "shoppingLists", listId);
+  try {
+    // arrayRemove accepts multiple arguments
+    await updateDoc(listDocRef, { productIDs: arrayRemove(...productIds) });
+    console.log(`Removed ${productIds.length} product(s) from list ${listId}`);
+  } catch (err) {
+    console.error("Failed to remove items from list:", err);
     throw err;
   }
 };
