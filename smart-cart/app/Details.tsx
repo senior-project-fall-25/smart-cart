@@ -247,7 +247,10 @@ export default function ProductDetails({ }: { allergens?: string[] }) {
             style={styles.addButton}
             onPress={() => {
               const encoded = encodeURIComponent(JSON.stringify(data));
-              router.push(`/ChooseList?product=${encoded}`);
+              router.push({
+                pathname: '/ChooseList',
+                params: {product: encoded}
+              });
             }}
           >
             <Text style={styles.addButtonText}>Add to Shopping List</Text>
