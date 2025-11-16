@@ -1,321 +1,426 @@
-
-import { useState, useEffect } from "react";
-import { router } from "expo-router";
-import { Text, View, StyleSheet, KeyboardAvoidingView, TextInput, Button, ActivityIndicator, Pressable, Alert } from "react-native";
-import { auth,db } from "@/src/FirebaseConfig";
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithCredential } from "firebase/auth";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  ActivityIndicator,
+  Pressable,
+  Image,
+} from "react-native";
+import { useRouter } from "expo-router";
+import {
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+  deleteUser,
+  updateProfile,
+  fetchSignInMethodsForEmail,
+} from "firebase/auth";
+import { auth, db } from "../../src/FirebaseConfig";
+import { doc, setDoc } from "firebase/firestore";
 import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
-import { makeRedirectUri } from "expo-auth-session";
-import { FirebaseError } from "firebase/app";
-import { Image } from "react-native";
-import { addDoc, collection, doc, setDoc } from 'firebase/firestore';
-import { updateProfile } from "firebase/auth";
+import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
 
 WebBrowser.maybeCompleteAuthSession();
 
+export default function SignUp() {
+  const router = useRouter();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPW, setConfirmPW] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState<"form" | "verify">("form");
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    clientId:
+      "1004457801974-9a70hbmbbf1sgkp013f5smohv9fl2bdh.apps.googleusercontent.com",
+    redirectUri: "https://smartcart-5cb29.firebaseapp.com/__/auth/handler",
+    scopes: ["openid", "email", "profile"],
+  });
 
-export default function signUp() {
+  // ---------------------------------------------------------------------
+  // STEP 1 — Validate + check email doesn't exist
+  // ---------------------------------------------------------------------
+const handleSignUp = async () => {
+  if (password !== confirmPW) {
+    Alert.alert("Error", "Passwords do not match!");
+    return;
+  }
+  if (!email || !password || !firstName || !lastName) {
+    Alert.alert("Error", "Please fill out all fields");
+    return;
+  }
 
-    const [firstName, setFirstName] = useState ('');
-    const [lastName, setLastName] = useState ('');
-    const [email, setEmail] = useState ('');
-    const [password, setPassword] = useState('');
-    const [confirmPW, setConfirmPW] = useState('');
-    const [loading, setLoading] = useState (false);
+  setLoading(true);
+  try {
+    // Create the actual user
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+
+    // Send verification email
+    await sendEmailVerification(cred.user);
+
+    Alert.alert(
+      "Verify Email",
+      "A verification email has been sent. Please check your inbox and click the link."
+    );
+
+    // Move to verification screen
+    setStep("verify");
+
+  } catch (err: any) {
+    Alert.alert("Error", err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
 
-    //redirecturi func to route firebsase from google Auth
-    const redirectUri = makeRedirectUri();
-  
-    
-    const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-        clientId: "1004457801974-9a70hbmbbf1sgkp013f5smohv9fl2bdh.apps.googleusercontent.com", // google Auth client ID
-        redirectUri:'https://smartcart-5cb29.firebaseapp.com/__/auth/handler', // firebase URI route
-        scopes: ["openid", "email", "profile"],
+  const sendVerificationEmailOnly = async () => {
+    setLoading(true);
+
+    try {
+      // 1. Create a temporary user
+      const tempCred = await createUserWithEmailAndPassword(auth, email, password);
+
+      // 2. Send verification email
+      await sendEmailVerification(tempCred.user);
+
+      Alert.alert(
+        "Verification Sent",
+        "A verification email has been sent. Please check your inbox."
+      );
+
+      // 3. Immediately delete the temp user so it does NOT appear in Auth
+      await deleteUser(tempCred.user);
+    } catch (error: any) {
+      console.log(error);
+      Alert.alert("Error", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---------------------------------------------------------------------
+  // STEP 2 — User presses "I Verified My Email"
+  // Create REAL account ONLY after user has verified
+  // ---------------------------------------------------------------------
+const handleFinalizeSignUp = async () => {
+  setLoading(true);
+
+  try {
+    if (!auth.currentUser) {
+      Alert.alert("Error", "User session expired. Please sign up again.");
+      setStep("form");
+      return;
+    }
+
+    // Reload user to get fresh emailVerified state
+    await auth.currentUser.reload();
+
+    if (!auth.currentUser.emailVerified) {
+      Alert.alert("Not Verified", "Your email is not verified yet.");
+      return;
+    }
+
+    // Verified — now write to Firestore
+    const uid = auth.currentUser.uid;
+
+    await setDoc(doc(db, "users", uid), {
+      userID: uid,
+      firstName,
+      lastName,
+      allergies: [],
+      createdAt: Date.now(),
     });
 
-    const createUser = async () => {
-    
-        const userID = auth.currentUser?.uid;
-        
+    await updateProfile(auth.currentUser, { displayName: firstName });
 
-        if (userID){
-          try {
-            // input the database, dabase table name, and custom doc id
-            const docRef = doc(db, "users", userID)
-            
-            await setDoc(docRef, {
-                userID: userID,
-                firstName: firstName,
-                lastName: lastName,
-                allergies: [],
-            });
-    
-            console.log('new user created with id: ', userID);
-          }
-          catch (error) {
-              console.log('error creating new profile: ', error);
-              return null;
-          }
+    router.replace("/Profile-Creation/introduction");
+  } catch (err: any) {
+    Alert.alert("Error", err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
-        }
-    };
 
-    
-
-    //sign up func
-    const handlesignUp = async () => {
-        if( password !== confirmPW){
-            alert("Passwords Do Not Match!")
-            return;
-        }
-    
-    setLoading(true); //lets spinning whel play while information loads
-    
-      try{
-          const user  = await createUserWithEmailAndPassword(auth, email, password);
-          
-          await createUser();
-
-          await updateProfile(user.user, {
-              displayName: firstName 
-          });
-
-          router.replace('/Profile-Creation/introduction');
-
-          await auth.currentUser?.reload(); // refresh the user data
-          console.log("Reloaded display name:", auth.currentUser?.displayName);
-      } 
-      catch (error: any){
-          const err = error as FirebaseError;
-          alert('Sign up in Failed: ' + error.message);
-      }
-      finally{
-          setLoading(false);
-      }
+const deleteCurrentUser = async () => {
+  try {
+    if (auth.currentUser) {
+      await deleteUser(auth.currentUser);
+      console.log("Temporary user deleted.");
     }
+  } catch (err: any) {
+    console.log("Error deleting user:", err.message);
+  }
+};
 
-    
-    
-    //google button press initializer 
-    const onGooglePress =  async() => {
-        setLoading(true);
-        try{
-        await promptAsync();
-        } finally{
 
-        }
-    }
 
-    //cases for google Auth
-    useEffect(() => {
+  // ---------------------------------------------------------------------
+  // Google Login
+  // ---------------------------------------------------------------------
+  React.useEffect(() => {
     const go = async () => {
-        if (response?.type === "success") {
+      if (response?.type === "success") {
         const idToken = (response.params as any)?.id_token;
-        if (!idToken) { setLoading(false); alert("Google sign-in failed"); return; }
+        if (!idToken) {
+          Alert.alert("Google sign-in failed");
+          return;
+        }
         const cred = GoogleAuthProvider.credential(idToken);
         await signInWithCredential(auth, cred);
-        setLoading(false);
-        router.replace('/Profile-Creation/introduction');
-        } else if (response?.type === "error") {
-        setLoading(false);
-        alert("Google sign-in error");
-        } else if (response?.type === "dismiss" || response?.type === "cancel") {
-        setLoading(false);
-        }
-        };
-        go();
-    }, [response]);
+        router.replace("/Profile-Creation/introduction");
+      }
+    };
+    go();
+  }, [response]);
 
-  return (
-    <View
-      style={styles.container}
-    >
-      <KeyboardAvoidingView behavior="padding">
-        <Image 
-        source={require("../../assets/logos/logo2.png")}
-        style={{width: "90%",height:60, alignSelf: 'center', marginBottom:50}}
-        resizeMode="contain"
-        />
+  // ---------------------------------------------------------------------
+  // VERIFICATION SCREEN
+  // ---------------------------------------------------------------------
+  if (step === "verify") {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Verify Your Email</Text>
+        <Text style={styles.body}>
+          Please verify your email before creating your account:
+        </Text>
 
-        <Text style={styles.title}> Create an Account </Text>
-        <Text style={styles.body}> Enter your credentials to start using SmartCart!</Text>
-        
+        <Text style={[styles.body, { fontWeight: "bold", marginBottom: 20 }]}>
+          {email}
+        </Text>
 
-        <TextInput
-          style={[styles.input, styles.inputText]}
-          value={firstName}
-          onChangeText={setFirstName}
-          placeholder="First Name"
-        
-        />
-        <TextInput
-          style={[styles.input, styles.inputText]}
-          value={lastName}
-          onChangeText={setLastName}
-          placeholder="Last Name"
-        
-        />
-        <TextInput
-          style={styles.input}
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          placeholder="Email"
-        
-        />
-        <TextInput
-          style={[styles.input, styles.inputText]}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          placeholder="Password"
-        />
-         <TextInput
-          style={[styles.input, styles.inputText]}
-          value={confirmPW}
-          onChangeText={setConfirmPW}
-          secureTextEntry
-          placeholder="Confirm Password"
-        />
-        { loading ? (
-          <ActivityIndicator size={'small'} style = {{margin: 28}}/>
-        ) :(
+        <Text style={[styles.body, { marginBottom: 30 }]}>
+          First, send a verification email. Then click "I Verified My Email"
+          after confirming the link in your inbox.
+        </Text>
+
+        {loading ? (
+          <ActivityIndicator />
+        ) : (
           <>
-            <Pressable style={styles.button} onPress={handlesignUp}>
-              <Text style={[styles.body, {color:'#fff'}]}> Continue</Text>
-            </Pressable>
-            
-            
+            {/* --- SEND VERIFICATION EMAIL BUTTON --- */}
+            <Pressable
+              style={[styles.button, { backgroundColor: "#ccc", marginTop: 10 }]}
+              onPress={async () => {
+                try {
+                  if (!auth.currentUser) return;
 
+                  await sendEmailVerification(auth.currentUser);
+                  Alert.alert("Verification Sent", "Check your inbox for the email.");
+                } catch (err: any) {
+                  console.log("Error resending verification:", err.message);
+
+                  if (err.code === "auth/too-many-requests") {
+                    Alert.alert(
+                      "Slow Down",
+                      "You have requested too many verification emails. Please wait a few minutes before trying again."
+                    );
+                    return;
+                  }
+
+                  Alert.alert("Error", err.message);
+                }
+              }}
+
+            >
+              <Text style={[styles.body, { color: "#000" }]}>
+                Resend Verification Email
+              </Text>
+            </Pressable>
+
+
+            {/* --- CONFIRM EMAIL VERIFIED BUTTON --- */}
+            <Pressable
+              style={[styles.button, { marginTop: 12 }]}
+              onPress={handleFinalizeSignUp}
+            >
+              <Text style={[styles.body, { color: "#fff" }]}>
+                I Verified My Email
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={[styles.button, { backgroundColor: "#ccc", marginTop: 12 }]}
+              onPress={async () => {
+                await deleteCurrentUser();   // delete temp account
+                setStep("form");             // go back to form
+              }}
+            >
+              <Text style={[styles.body, { color: "#000" }]}>
+                Back to Edit Email
+              </Text>
+            </Pressable>
           </>
         )}
+      </View>
+    );
+  }
 
-        <View style={styles.linkRow}>
-          <Text style={styles.linkText}>Already have an account? </Text>
-          <Pressable onPress={() => router.push("/Authentication/signIn")} accessibilityRole="button" accessibilityLabel="Sign up">
-          <Text style={styles.linkAction}>Sign In</Text>
-          </Pressable>
+  // ---------------------------------------------------------------------
+  // FORM SCREEN
+  // ---------------------------------------------------------------------
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+        <View style={styles.formWrapper}>
+          <Image
+            source={require("../../assets/logos/logo2.png")}
+            style={{
+              width: "90%",
+              height: 60,
+              alignSelf: "center",
+              marginBottom: 30,
+              marginTop: 30,
+            }}
+            resizeMode="contain"
+          />
+          <Text style={[styles.title, { marginTop: -10 }]}>Create an Account</Text>
+
+          <Text style={styles.label}>First Name</Text>
+          <TextInput
+            style={styles.input}
+            value={firstName}
+            onChangeText={setFirstName}
+            placeholder="First Name"
+          />
+
+          <Text style={styles.label}>Last Name</Text>
+          <TextInput
+            style={styles.input}
+            value={lastName}
+            onChangeText={setLastName}
+            placeholder="Last Name"
+          />
+
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            placeholder="Email"
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+
+          <Text style={styles.label}>Password</Text>
+          <TextInput
+            style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Password"
+            secureTextEntry
+          />
+
+          <Text style={styles.label}>Confirm Password</Text>
+          <TextInput
+            style={styles.input}
+            value={confirmPW}
+            onChangeText={setConfirmPW}
+            placeholder="Confirm Password"
+            secureTextEntry
+          />
+
+          {loading ? (
+            <ActivityIndicator style={{ margin: 28 }} />
+          ) : (
+            <Pressable style={styles.button} onPress={handleSignUp}>
+              <Text style={{ color: "#fff" }}>Continue</Text>
+            </Pressable>
+          )}
+
+          <View style={styles.linkRow}>
+            <Text style={styles.linkText}>Already have an account?</Text>
+            <Pressable onPress={() => router.push("/Authentication/signIn")}>
+              <Text style={styles.linkAction}>Sign In</Text>
+            </Pressable>
+          </View>
         </View>
-        <View style={styles.dividerRow}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>or</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        <Pressable style={styles.googleBtn}  accessibilityRole="button"  onPress={onGooglePress} accessibilityLabel="Sign in with Google">
-          <Image source={require("../../assets/logos/SU-Round.png")} style={styles.googleIcon} />
-        </Pressable>
-        
-
-        
-      </KeyboardAvoidingView>
-      
-    </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
-
-const styles = StyleSheet.create({ 
-  container:{
+const styles = StyleSheet.create({
+  container: {
     paddingHorizontal: 20,
     flex: 1,
-    justifyContent: 'flex-start',
-    backgroundColor: '#fff',
-    paddingTop: 100
-
+    justifyContent: "flex-start",
+    backgroundColor: "#fff",
+    paddingTop: 100,
   },
-  
+  formWrapper: {
+    width: "100%",
+    maxWidth: 420,
+    alignSelf: "center",
+    paddingHorizontal: 8,
+  },
   title: {
-  fontFamily: "DMSans-bold",   
-  fontSize: 24,
-  textAlign: "center",
-  marginBottom: 5
-},
-
-body: {
-  fontFamily: "DMSans",
-  fontWeight: "400",   
-  fontSize: 14,
-  textAlign: 'center',
-  marginBottom: 5
-},
-
-inputText: {
-  fontFamily: "DMSans",
-  fontWeight: "400",
-  fontSize: 16,
-  
-},
+    fontFamily: "DMSans-bold",
+    fontSize: 24,
+    textAlign: "center",
+    marginBottom: 5,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 6,
+    color: "#333",
+    fontFamily: "DM-Sans",
+  },
+  body: {
+    fontFamily: "DMSans",
+    fontWeight: "400",
+    fontSize: 14,
+    textAlign: "center",
+    marginBottom: 5,
+  },
   input: {
     marginVertical: 4,
     height: 50,
     borderWidth: 1,
-    borderRadius: 15, 
-    borderColor:'#d4cfcfff',
+    borderRadius: 15,
+    borderColor: "#d4cfcfff",
     padding: 10,
-    backgroundColor:'#fff',
+    fontFamily: "DM-Sans",
+    width: "100%",
   },
-
- button: {
-  alignSelf: "stretch",
-  height: 50,
-  borderRadius: 12,
-  backgroundColor: "#5ca3ff", 
-  alignItems: "center",
-  justifyContent: "center",
-  marginTop: 12,
- },
-
- dividerRow: {
-  flexDirection: "row",
-  alignItems: "center",
-  gap: 8,
-  marginVertical: 16,
-  marginTop: 32
-
-},
-dividerLine: {
-  flex: 1,
-  height: 1,
-  backgroundColor: "#e5e7eb",
-},
-dividerText: {
-  color: "#6b7280",
-  fontSize: 14,
-  fontWeight: "600",
-},
-
-googleBtn: {
-  alignSelf: "center",
-  width: '57%',
-  height: 50,
-  borderRadius: 45,
-  borderWidth: 1,
-  borderColor: "#e5e7eb",
-  alignItems: "center",
-  justifyContent: "center",
-  marginTop: 12,
-},
-googleIcon: { width: 200, height: 200, resizeMode: "contain" },
-
-
-linkRow: {
-  flexDirection: "row",
-  alignSelf: "center",
-  marginTop: 12,
-  marginBottom: 8, 
-},
-linkText: {
-  fontSize: 14,
-  color: "#6b7280",
-},
-linkAction: {
-  fontSize: 14,
-  color: "#2563eb",
-  fontWeight: "600",
-},
-
-})
+  button: {
+    height: 50,
+    borderRadius: 12,
+    backgroundColor: "#5ca3ff",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 12,
+  },
+  linkRow: {
+    flexDirection: "row",
+    alignSelf: "center",
+    marginTop: 12,
+  },
+  linkText: { color: "#6b7280" },
+  linkAction: { color: "#2563eb", fontWeight: "600" },
+  tag: {
+    backgroundColor: "#FF5151",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  tagText: { color: "#fff", fontSize: 12, fontWeight: "600" },
+  smallButton: {
+    backgroundColor: "#5CA3FF",
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    justifyContent: "center",
+  },
+  smallButtonText: { color: "#fff", fontWeight: "600" },
+});
