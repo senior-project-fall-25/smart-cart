@@ -85,7 +85,7 @@ export default function RootLayout() {
         <Stack.Screen
           name="shopListDetails"
           options={{
-            title: "",
+            title: "Shopping List",
             headerShown: true,
             headerBackTitle: "Back",
             headerTitleStyle: { fontFamily: 'DM-Sans-Medium', fontSize: 18 },
