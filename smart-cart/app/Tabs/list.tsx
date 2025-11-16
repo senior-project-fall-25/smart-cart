@@ -407,8 +407,8 @@ const ListScreen = () => {
                     router.push({
                       pathname: '/Details',
                       params: {
-                        product: encodeURIComponent(JSON.stringify(item)),
-                        allergens: encodeURIComponent(JSON.stringify(allergens)),
+                        product: JSON.stringify(item),
+                        allergens: JSON.stringify(allergens),
                       },
                     })
                   }

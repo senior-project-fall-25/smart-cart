@@ -142,7 +142,7 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Shopping Lists</Text>
+      <Text style={styles.sectionTitle}>Your Shopping Lists</Text>
 
       <FlatList
         data={lists}
@@ -168,9 +168,10 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "700",
-    marginBottom: 8,
+    marginBottom: 12,
+    fontFamily: 'DM-Sans-Bold'
   },
   listContent: {
     paddingBottom: 16,
@@ -203,6 +204,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     marginRight: 8,
+    fontFamily: 'DM-Sans-Medium'
   },
   cardCount: {
     fontSize: 12,

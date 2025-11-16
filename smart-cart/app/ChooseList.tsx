@@ -46,7 +46,7 @@ export default function ChooseList({ onDone }: Props) {
 
   if (productParam) {
     try {
-      product = JSON.parse(decodeURIComponent(productParam));
+      product = JSON.parse(productParam);
     } catch (e) {
       console.warn("Could not parse product param", e);
     }

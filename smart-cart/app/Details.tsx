@@ -11,10 +11,12 @@ export default function ProductDetails({ }: { allergens?: string[] }) {
     product?: string;
     allergens?: string;
   }>();
-  const data = product ? JSON.parse(decodeURIComponent(product as string)) : null;
+  // console.log("PRODUCT: ", product);
+  const data = product ? JSON.parse(product as string) : null;
+  const allergenList = allergens ? JSON.parse(allergens as string) : [];
   const [imgUri, setImgUri] = useState(data?.image || null);
   const [hasError, setHasError] = useState(false);
-  const allergenList = allergens ? JSON.parse(decodeURIComponent(allergens as string)) : [];
+  // const allergenList = allergens ? JSON.parse(decodeURIComponent(allergens as string)) : [];
 
   if (!data) {
     return (
@@ -246,10 +248,10 @@ export default function ProductDetails({ }: { allergens?: string[] }) {
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => {
-              const encoded = encodeURIComponent(JSON.stringify(data));
+              const encoded = JSON.stringify(data);
               router.push({
                 pathname: '/ChooseList',
-                params: {product: encoded}
+                params: { product: encoded }
               });
             }}
           >
